@@ -1,5 +1,5 @@
 /*REXX*/
-CALL "TSOCLR" 
+CALL "TSOCLR"
 
 START:
 

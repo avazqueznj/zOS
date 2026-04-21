@@ -1,0 +1,26 @@
+      ****************************************************************  00010000
+      *   This program does a simple display of                      *  0002000
+      *  "HELLO WORLD"                                               *  00030000
+      ****************************************************************  00050000
+      ****************************************************************  00060000
+      **           I D          D I V I S I O N                    ***  00070000
+      ****************************************************************  00080000
+       IDENTIFICATION DIVISION.                                         00090000
+       PROGRAM-ID.    MYPROG.                                           00100000
+       AUTHOR.        Cam Seay.                                         00101007
+      ****************************************************************  00110000
+      **           D A T A      D I V I S I O N                    ***  00120000
+      ****************************************************************  00130000
+       DATA DIVISION.                                                   00140007
+       Working-Storage Section.                                         00150000
+       Procedure Division.                                              00434000
+       000-Main-Logic.                                                  00435000
+           PERFORM 100-SAY-HELLO.                                       00436008
+           STOP RUN.                                                    00439007
+      **                                                                00440000
+      ** Display "HELLO WORLD" and quit.                                00450000
+      **                                                                00460000
+       100-Say-Hello.                                                   00470000
+           DISPLAY "are you seeing this?".
+           display  " alejandro's hello world!".
+       End program MYPROG.                                              00690000
