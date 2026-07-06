@@ -1,0 +1,35 @@
+//ASSG1   JOB 1,'A VAZQUEZ',MSGCLASS=H,NOTIFY=&SYSUID
+//* 
+//***************************************************************** 
+//*                                                               * 
+//*  COBOL                 ASSIGNMENT 1                           * 
+//*                                                               * 
+//*  DEVELOPER NAME:  A VAZQUEZ                                   *
+//*                                                               *
+//*                                                               * 
+//*  PURPOSE: The purpose of this job is to allocated a new PDSE, * 
+//*                                                               *
+//*                                                               *
+//***************************************************************** 
+//* 
+//JSTEP01  EXEC PGM=IEFBR14 
+//* 
+//*  The following DD card deletes an existing PDSE if it already 
+//*  exists. If it does not exist, a flat file of the same name is 
+//*  first allocated and then immediately deleted. 
+//* 
+//DD1      DD DSN=EMMA101.COBOL.LOADLIB, 
+//            SPACE=(TRK,(1,1)), 
+//            DISP=(MOD,DELETE,DELETE) 
+//* 
+//JSTEP02  EXEC PGM=IEFBR14,COND=(0,LT) 
+//* 
+//*  The following DD card allocates a PDSE to hold your program  
+//*  load module files. 
+//* 
+//DD1      DD DSN=EMMA101.COBOL.LOADLIB, 
+//            DCB=(RECFM=U,LRECL=0,BLKSIZE=4096), 
+//            DSNTYPE=LIBRARY,  
+//            SPACE=(CYL,(2,2,2)), 
+//            DISP=(NEW,CATLG,DELETE)
+//            
