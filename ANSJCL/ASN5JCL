@@ -1,0 +1,73 @@
+//EMMAnnnA JOB ,'1st init., period, space & last name here',MSGCLASS=H
+//*
+//***************************************************************
+//*                                                             *
+//*  COBOL              ASSIGNMENT 5 JCL                        *
+//*                                                             *
+//*  Change the nnn in the JOB card above to the last 3 digits  *
+//*  of your own mainframe ID, enter your first initial         *
+//*  followed by a period, a space and then your last name in   *
+//*  between the single quotes (tick marks) in the JOB card     *
+//*  above. Lastly, change the nnn in the SYSLMOD DD card of    *
+//*  JSTEP02 and the STEPLIB DD card of JSTEP03 to the last     *
+//*  two digits of your own mainframe ID.                       *
+//*                                                             *
+//***************************************************************
+//*
+//JSTEP01  EXEC PGM=IGYCRCTL,REGION=0M
+//*
+//STEPLIB  DD DSN=IGY.SIGYCOMP,DISP=SHR
+//         DD DSN=CEE.SCEERUN,DISP=SHR
+//         DD DSN=CEE.SCEERUN2,DISP=SHR
+//*
+//SYSIN    DD *
+
+    Here is where you will type your COBOL code.
+
+/*
+//*
+//SYSLIN   DD DSN=&&OBJMOD,SPACE=(CYL,(1,1)),DISP=(MOD,PASS)
+//*
+//SYSPRINT DD SYSOUT=*
+//*
+//SYSUT1   DD SPACE=(CYL,(1,1))
+//SYSUT2   DD SPACE=(CYL,(1,1))
+//SYSUT3   DD SPACE=(CYL,(1,1))
+//SYSUT4   DD SPACE=(CYL,(1,1))
+//SYSUT5   DD SPACE=(CYL,(1,1))
+//SYSUT6   DD SPACE=(CYL,(1,1))
+//SYSUT7   DD SPACE=(CYL,(1,1))
+//SYSUT8   DD SPACE=(CYL,(1,1))
+//SYSUT9   DD SPACE=(CYL,(1,1))
+//SYSUT10  DD SPACE=(CYL,(1,1))
+//SYSUT11  DD SPACE=(CYL,(1,1))
+//SYSUT12  DD SPACE=(CYL,(1,1))
+//SYSUT13  DD SPACE=(CYL,(1,1))
+//SYSUT14  DD SPACE=(CYL,(1,1))
+//SYSUT15  DD SPACE=(CYL,(1,1))
+//SYSMDECK DD SPACE=(CYL,(1,1))
+//*
+//JSTEP02  EXEC PGM=IEWBLINK,REGION=0M,COND=(0,LT)
+//*
+//SYSLIB   DD DSN=CEE.SCEELKEX,DISP=SHR
+//         DD DSN=CEE.SCEELKED,DISP=SHR
+//*
+//SYSLIN   DD DSN=&&OBJMOD,DISP=(OLD,DELETE,DELETE)
+//*
+//SYSLMOD  DD DSN=EMMAnnn.COBOL.LOADLIB(SALESRPT),
+//            SPACE=(1024,(50,20,1)),
+//            DSNTYPE=LIBRARY,
+//            DISP=(MOD,CATLG,KEEP)
+//*
+//SYSPRINT DD SYSOUT=*
+//*
+//JSTEP03  EXEC PGM=SALESRPT,COND=(0,LT)
+//*
+//STEPLIB  DD DSN=EMMAnnn.COBOL.LOADLIB,DISP=SHR
+//*
+//SYSOUT   DD SYSOUT=*
+//*
+//SYSLOUT  DD SYSOUT=*
+//*
+//SYSUDUMP DD SYSOUT=*
+//
