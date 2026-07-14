@@ -1,0 +1,23 @@
+//GEOFREYA JOB ,'G. DECKER',MSGCLASS=H
+//*
+//JSTEP01  EXEC PGM=IEFBR14
+//*
+//*  The following DD card deletes an existing load library PDSE
+//*  if it already exists.  If it does not exist, the data set is
+//*  first allocated and then immediately deleted.
+//*
+//DD1      DD DSN=GEOFREY.MLCCOBOL.LOADLIB,
+//            SPACE=(TRK,(1,1)),
+//            DISP=(MOD,DELETE,DELETE)
+//*
+//JSTEP02  EXEC PGM=IEFBR14,COND=(0,LT)
+//*
+//*  The following DD card allocates a PDSE to hold your program
+//*  object, or load module, members.
+//*
+//DD1      DD DSN=GEOFREY.MLCCOBOL.LOADLIB1,
+//            DCB=(LRECL=0,BLKSIZE=4096,RECFM=U),
+//            SPACE=(CYL,(9,5,6)),
+//            DSNTYPE=LIBRARY,
+//            DISP=(NEW,CATLG,DELETE)
+//
