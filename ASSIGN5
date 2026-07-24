@@ -112,13 +112,12 @@
            88 NOT-END-OF-FILE         VALUE 'N'.
 
        01  WS-CURRENT-DATE.
-           05 WS-CURRENT-YEAR        PIC X(4).
-           05 WS-CURRENT-MONTH       PIC X(2).
-           05 WS-CURRENT-DAY         PIC X(2).
-           05 WS-CURRENT-TIME        PIC X(6).
-           05 WS-CURRENT-HUNDREDTHS  PIC X(2).
-           05 WS-CURRENT-OFFSET      PIC X(5).
-
+           05 CURRENT-YEAR           PIC X(4).
+           05 CURRENT-MONTH          PIC X(2).
+           05 CURRENT-DAY            PIC X(2).
+           05 CURRENT-TIME           PIC X(6).
+           05 CURRENT-HUNDREDTHS     PIC X(2).
+           05 CURRENT-OFFSET         PIC X(5).
 
       *              *** REPORT DATA ***
 
@@ -128,11 +127,11 @@
       ** REPORT HEADER LINE 1 **
        01  WS-PAGE-HEADER-1.
            05 WS-HEADER-DATE.
-              10 WS-HEADER-MONTH     PIC X(2).
+              10 CURRENT-MONTH       PIC X(2).
               10 FILLER              PIC X VALUE '/'.
-              10 WS-HEADER-DAY       PIC X(2).
+              10 CURRENT-DAY         PIC X(2).
               10 FILLER              PIC X VALUE '/'.
-              10 WS-HEADER-YEAR      PIC X(4).
+              10 CURRENT-YEAR        PIC X(4).
            05 FILLER                 PIC X(29) VALUE SPACES.
            05 WS-COMPANY-NAME        PIC X(37)
                                      JUSTIFIED RIGHT.
@@ -160,7 +159,7 @@
       *************************************************************
        000-MAIN.
 
-           DISPLAY 'SALESRPT STARTING... V5.3'.
+           DISPLAY 'SALESRPT STARTING... V5.4'.
 
            PERFORM 100-OPEN-SALE-FILE.
 
@@ -228,10 +227,8 @@
        220-PREPARE-HEADER.
 
       *    GET TODAY'S DATE
-           MOVE FUNCTION CURRENT-DATE     TO WS-CURRENT-DATE.
-           MOVE WS-CURRENT-MONTH          TO WS-HEADER-MONTH.
-           MOVE WS-CURRENT-DAY            TO WS-HEADER-DAY.
-           MOVE WS-CURRENT-YEAR           TO WS-HEADER-YEAR.
+           MOVE FUNCTION CURRENT-DATE TO WS-CURRENT-DATE.
+           MOVE CORRESPONDING WS-CURRENT-DATE TO WS-HEADER-DATE.
 
       *    SET COMPANY NAME
            MOVE 'WASHINGTON & LINCOLN INVESTMENTS'
