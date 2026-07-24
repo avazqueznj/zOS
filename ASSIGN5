@@ -1,0 +1,396 @@
+//EMMA101A JOB 1,'A VAZQUEZ',MSGCLASS=H,NOTIFY=&SYSUID
+//*
+//***************************************************************
+//*                                                             *
+//*  COBOL              ASSIGNMENT 5                            *
+//*                                                             *
+//***************************************************************
+//*
+//* DELETE IF EXISTS
+//DELREPT  EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  DELETE EMMA101.COBOL.SALESRPT PURGE
+  SET MAXCC = 0
+/*
+//*
+//JSTEP01  EXEC PGM=IGYCRCTL,REGION=0M
+//*
+//STEPLIB  DD DSN=IGY.SIGYCOMP,DISP=SHR
+//         DD DSN=CEE.SCEERUN,DISP=SHR
+//         DD DSN=CEE.SCEERUN2,DISP=SHR
+//*
+//SYSIN    DD *
+
+
+
+
+
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.    SALESRPT.
+       AUTHOR.        A. VAZQUEZ.
+       DATE-WRITTEN.  07/13/2026.
+
+      ****************************************************************
+      *                                                              *
+      *  PROGRAM NAME:  SALESRPT                                     *
+      *                                                              *
+      *  PURPOSE:  EMMA ASSIGNMENT 5.                                *
+      *            READ DATA FILE WITH COLUMNAR DATA AND             *
+      *            MAKE A COLUMNAR REPORT WITH HEADER, STRINGS       *
+      *            AND NUMBERS                                       *
+      *                                                              *
+      *                                                              *
+      *  INPUT:   DSN=EMMA.COBOL.ASNDATA(DATA5)                      *
+      *                                                              *
+      *  OUTPUT:  DSN=EMMA101.COBOL.SALESRPT                         *
+      *                                                              *
+      *  ENTRY CONDITION:                                            *
+      *           1. INPUT FILE IS NOT EMPTY                         *
+      *                                                              *
+      *  EXIT CONDITION:                                             *
+      *           1. OUTPUT FILE IS NOT EMPTY                        *
+      *  NOTES:                                                      *
+      *                                                              *
+      *                                                              *
+      ****************************************************************
+
+       ENVIRONMENT DIVISION.
+
+       INPUT-OUTPUT SECTION.
+
+       FILE-CONTROL.
+           SELECT SALE-FILE
+               ASSIGN TO SALEFILE
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-SALE-FILE-STATUS.
+
+           SELECT REPORT-FILE
+               ASSIGN TO REPORTFL
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-REPORT-FILE-STATUS.
+
+
+       DATA DIVISION.
+       FILE SECTION.
+
+       FD  SALE-FILE.
+       01  SALE-RECORD.
+           05 IN-BRANCH-NME           PIC X(20).
+           05 IN-BROKER-NME           PIC X(25).
+           05 IN-DEP-AMT              PIC 9(9)V99.
+           05 FILLER                  PIC X(24).
+
+       FD  REPORT-FILE
+           RECORDING MODE IS F
+           RECORD CONTAINS 132 CHARACTERS.
+
+       01  REPORT-RECORD.
+           05 OUT-BRANCH-NME          PIC X(20).
+           05 FILLER                  PIC X(8).
+           05 OUT-BROKER-NME          PIC X(25).
+           05 FILLER                  PIC X(9).
+           05 OUT-SALE-REC            PIC X(14).
+           05 FILLER                  PIC X(56).
+
+
+       WORKING-STORAGE SECTION.
+
+       01 WS-FORMAT                   PIC $$$,$$$,$$9.99 VALUE ZERO.
+
+       01  WS-SALE-FILE-STATUS        PIC XX.
+           88 SALE-FILE-OK            VALUE '00'.
+
+       01  WS-REPORT-FILE-STATUS      PIC XX.
+           88 REPORT-FILE-OK          VALUE '00'.
+
+      ** FILE READ STATUS FLAG AND 88 VALUES **
+       01  WS-END-OF-FILE             PIC X VALUE 'N'.
+           88 END-OF-FILE             VALUE 'Y'.
+           88 NOT-END-OF-FILE         VALUE 'N'.
+
+       01  WS-CURRENT-DATE.
+           05 WS-CURRENT-YEAR        PIC X(4).
+           05 WS-CURRENT-MONTH       PIC X(2).
+           05 WS-CURRENT-DAY         PIC X(2).
+           05 WS-CURRENT-TIME        PIC X(6).
+           05 WS-CURRENT-HUNDREDTHS  PIC X(2).
+           05 WS-CURRENT-OFFSET      PIC X(5).
+
+
+      *              *** REPORT DATA ***
+
+       01  WS-LINE-COUNT    PIC S9(4) BINARY         VALUE ZERO.
+       01  WS-PAGE-COUNT    PIC 9(4)  PACKED-DECIMAL VALUE ZERO.
+
+      ** REPORT HEADER LINE 1 **
+       01  WS-PAGE-HEADER-1.
+           05 WS-HEADER-DATE.
+              10 WS-HEADER-MONTH     PIC X(2).
+              10 FILLER              PIC X VALUE '/'.
+              10 WS-HEADER-DAY       PIC X(2).
+              10 FILLER              PIC X VALUE '/'.
+              10 WS-HEADER-YEAR      PIC X(4).
+           05 FILLER                 PIC X(29) VALUE SPACES.
+           05 WS-COMPANY-NAME        PIC X(37)
+                                     JUSTIFIED RIGHT.
+           05 FILLER                 PIC X(56) VALUE SPACES.
+
+      ** REPORT HEADER LINE 2 **
+       01  WS-PAGE-HEADER-2.
+           05 FILLER                  PIC X(5)   VALUE 'PAGE:'.
+           05 FILLER                  PIC X(3)   VALUE SPACES.
+           05 WS-HEADER-PAGE-NUM      PIC ZZZ9   VALUE ZERO.
+           05 FILLER                  PIC X(120) VALUE SPACES.
+
+      ** REPORT SPACER **
+       01  WS-BLANK-ROW               PIC X(132)  VALUE SPACES.
+
+
+
+       LOCAL-STORAGE SECTION.
+
+
+       PROCEDURE DIVISION.
+
+      *************************************************************
+      ** MAIN                                                     *
+      *************************************************************
+       000-MAIN.
+
+           DISPLAY 'SALESRPT STARTING... V5.3'.
+
+           PERFORM 100-OPEN-SALE-FILE.
+
+           PERFORM 110-OPEN-REPORT-FILE.
+
+           PERFORM 210-SKIP-FIRST-RECORD.
+
+           PERFORM 220-PREPARE-HEADER.
+
+           PERFORM 200-PROCESS-SALE-FILE.
+
+           PERFORM 300-CLOSE-SALE-FILE.
+
+           PERFORM 310-CLOSE-REPORT-FILE.
+
+           STOP RUN.
+
+
+       100-OPEN-SALE-FILE.
+
+           DISPLAY 'OPENING SALE FILE...'.
+
+           OPEN INPUT SALE-FILE.
+
+           IF NOT SALE-FILE-OK
+              DISPLAY 'FATAL: SALE FILE OPEN ERROR: '
+                   WS-SALE-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
+       110-OPEN-REPORT-FILE.
+
+           DISPLAY 'OPENING REPORT FILE...'.
+
+           OPEN OUTPUT REPORT-FILE.
+
+           IF NOT REPORT-FILE-OK
+              DISPLAY 'FATAL: REPORT FILE OPEN ERROR: '
+                   WS-REPORT-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
+       200-PROCESS-SALE-FILE.
+
+           PERFORM UNTIL END-OF-FILE
+              READ SALE-FILE
+                  AT END
+                      SET END-OF-FILE TO TRUE
+                  NOT AT END
+                      PERFORM 250-PROCESS-SALES-RECORD
+              END-READ
+           END-PERFORM.
+
+
+       210-SKIP-FIRST-RECORD.
+
+           READ SALE-FILE
+               AT END
+                   SET END-OF-FILE TO TRUE
+           END-READ.
+
+
+       220-PREPARE-HEADER.
+
+      *    GET TODAY'S DATE
+           MOVE FUNCTION CURRENT-DATE     TO WS-CURRENT-DATE.
+           MOVE WS-CURRENT-MONTH          TO WS-HEADER-MONTH.
+           MOVE WS-CURRENT-DAY            TO WS-HEADER-DAY.
+           MOVE WS-CURRENT-YEAR           TO WS-HEADER-YEAR.
+
+      *    SET COMPANY NAME
+           MOVE 'WASHINGTON & LINCOLN INVESTMENTS'
+               TO WS-COMPANY-NAME.
+
+      *    PREPARE COUNTERS
+           COMPUTE WS-LINE-COUNT = 0.
+           COMPUTE WS-PAGE-COUNT = 0.
+
+
+       230-WRITE-PAGE-HEADER.
+
+           COMPUTE  WS-PAGE-COUNT = WS-PAGE-COUNT + 1.
+           MOVE WS-PAGE-COUNT TO WS-HEADER-PAGE-NUM.
+
+           WRITE REPORT-RECORD FROM WS-PAGE-HEADER-1.
+           IF NOT REPORT-FILE-OK
+               DISPLAY 'FATAL: REPORT FILE WRITE ERROR: '
+                   WS-REPORT-FILE-STATUS
+               STOP RUN
+           END-IF.
+
+           WRITE REPORT-RECORD FROM WS-PAGE-HEADER-2.
+           IF NOT REPORT-FILE-OK
+               DISPLAY 'FATAL: REPORT FILE WRITE ERROR: '
+                   WS-REPORT-FILE-STATUS
+               STOP RUN
+           END-IF.
+
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW.
+           IF NOT REPORT-FILE-OK
+               DISPLAY 'FATAL: REPORT FILE WRITE ERROR: '
+                   WS-REPORT-FILE-STATUS
+               STOP RUN
+           END-IF.
+
+           DISPLAY "--HEADER--".
+
+
+       250-PROCESS-SALES-RECORD.
+
+      **  print header if needed **
+           IF WS-LINE-COUNT = 0 THEN
+              PERFORM 230-WRITE-PAGE-HEADER
+           END-IF.
+
+      ** Log record **
+           MOVE IN-DEP-AMT TO WS-FORMAT.
+           DISPLAY
+              IN-BRANCH-NME SPACE
+              IN-BROKER-NME SPACE
+              WS-FORMAT.
+
+      ** save record **
+           MOVE SPACES TO REPORT-RECORD.
+
+           MOVE IN-BRANCH-NME TO OUT-BRANCH-NME.
+           MOVE IN-BROKER-NME TO OUT-BROKER-NME.
+           MOVE IN-DEP-AMT    TO WS-FORMAT.
+           MOVE WS-FORMAT     TO OUT-SALE-REC.
+
+           WRITE REPORT-RECORD
+
+           IF NOT REPORT-FILE-OK
+               DISPLAY 'FATAL: REPORT FILE WRITE ERROR: '
+                   WS-REPORT-FILE-STATUS
+               STOP RUN
+           END-IF.
+
+      ** compute pagination **
+           COMPUTE WS-LINE-COUNT = WS-LINE-COUNT + 1.
+           IF WS-LINE-COUNT = 18
+              COMPUTE WS-LINE-COUNT = 0
+           END-IF.
+
+
+       300-CLOSE-SALE-FILE.
+
+           DISPLAY 'CLOSING SALES FILE...'.
+
+           CLOSE SALE-FILE.
+
+           IF NOT SALE-FILE-OK
+               DISPLAY 'FATAL: SALE FILE CLOSE ERROR: '
+                   WS-SALE-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
+       310-CLOSE-REPORT-FILE.
+
+           DISPLAY 'CLOSING REPORT FILE...'.
+
+           CLOSE REPORT-FILE.
+
+           IF NOT REPORT-FILE-OK
+               DISPLAY 'FATAL: REPORT FILE CLOSE ERROR '
+                   WS-REPORT-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
+       END PROGRAM SALESRPT.
+
+
+
+
+/*
+//*
+//SYSLIN   DD DSN=&&OBJMOD,SPACE=(CYL,(1,1)),DISP=(MOD,PASS)
+//*
+//SYSPRINT DD SYSOUT=*
+//*
+//SYSUT1   DD SPACE=(CYL,(1,1))
+//SYSUT2   DD SPACE=(CYL,(1,1))
+//SYSUT3   DD SPACE=(CYL,(1,1))
+//SYSUT4   DD SPACE=(CYL,(1,1))
+//SYSUT5   DD SPACE=(CYL,(1,1))
+//SYSUT6   DD SPACE=(CYL,(1,1))
+//SYSUT7   DD SPACE=(CYL,(1,1))
+//SYSUT8   DD SPACE=(CYL,(1,1))
+//SYSUT9   DD SPACE=(CYL,(1,1))
+//SYSUT10  DD SPACE=(CYL,(1,1))
+//SYSUT11  DD SPACE=(CYL,(1,1))
+//SYSUT12  DD SPACE=(CYL,(1,1))
+//SYSUT13  DD SPACE=(CYL,(1,1))
+//SYSUT14  DD SPACE=(CYL,(1,1))
+//SYSUT15  DD SPACE=(CYL,(1,1))
+//SYSMDECK DD SPACE=(CYL,(1,1))
+//*
+//JSTEP02  EXEC PGM=IEWBLINK,COND=(0,LT)
+//*
+//SYSLIB   DD DSN=CEE.SCEELKEX,DISP=SHR
+//         DD DSN=CEE.SCEELKED,DISP=SHR
+//*
+//SYSLIN   DD DSN=&&OBJMOD,DISP=(OLD,DELETE,DELETE)
+//*
+//SYSLMOD  DD DSN=EMMA101.COBOL.LOADLIB(SALESRPT),
+//            SPACE=(1024,(50,20,1)),
+//            DSNTYPE=LIBRARY,
+//            DISP=(MOD,CATLG,KEEP)
+//*
+//SYSPRINT DD SYSOUT=*
+//*
+//JSTEP03  EXEC PGM=SALESRPT,COND=(0,LT)
+//*
+//STEPLIB  DD DSN=EMMA101.COBOL.LOADLIB,DISP=SHR
+//*
+//SALEFILE DD DSN=EMMA.COBOL.ASNDATA(DATA5),DISP=SHR
+//*
+//REPORTFL DD DSN=EMMA101.COBOL.SALESRPT,
+//            DISP=(NEW,CATLG,DELETE),
+//            UNIT=SYSDA,
+//            SPACE=(TRK,(1,1)),
+//            DCB=(RECFM=FB,LRECL=132,BLKSIZE=0)
+//*
+//SYSOUT   DD SYSOUT=*
+//*
+//SYSLOUT  DD SYSOUT=*
+//*
+//SYSUDUMP DD SYSOUT=*
+//
