@@ -35,7 +35,7 @@
       *                                                              *
       *  PROGRAM NAME:  SALESRPT                                     *
       *                                                              *
-      *  PURPOSE:  EMMA ASSIGNMENT 6.                                *
+      *  PURPOSE:  EMMA ASSIGNMENT 6. Rev5                           *
       *            READ DATA FILE WITH COLUMNAR DATA AND             *
       *            MAKE A COLUMNAR REPORT WITH HEADER, STRINGS       *
       *            NUMBERS, AND TOTAL SUMMARIES                      *
@@ -162,11 +162,12 @@
               10 CURRENT-DAY          PIC X(2).
               10 FILLER               PIC X          VALUE '/'.
               10 CURRENT-YEAR         PIC X(4).
-           05 WS-HEADER-INNER-SPACE   PIC X(109)     VALUE SPACES.
-           05 FILLER                  PIC X(5)       VALUE 'PAGE:'.
-           05 FILLER                  PIC X          VALUE SPACE.
+           05 WS-HEADER-INNER-SPACE   PIC X(109) VALUE SPACES.
+           05 FILLER                  PIC X(9)
+              VALUE '    PAGE:'.
+           05 FILLER                  PIC X
+              VALUE SPACE.
            05 WS-HEADER-PAGE-NUM      PIC ZZ9.
-           05 FILLER                  PIC X(4)       VALUE SPACES.
 
       ** REPORT HEADER LINE 2 **
        01  WS-PAGE-HEADER-2.
@@ -178,11 +179,11 @@
               10 FILLER               PIC X
                                       VALUE SPACE.
               10 WS-HEADER-AM-PM      PIC X(2).
-           05 FILLER                  PIC X(40)
+           05 FILLER                  PIC X(39)
                                       VALUE SPACES.
            05 FILLER                  PIC X(35)
               VALUE 'BROKER SALES AND COMMISSIONS REPORT'.
-           05 FILLER                  PIC X(49)
+           05 FILLER                  PIC X(50)
                                       VALUE SPACES.
 
       ** REPORT SPACE **
@@ -197,29 +198,29 @@
            05 FILLER                  PIC X(56)      VALUE SPACES.
 
       ** column headings **
-       01  WS-COLUMN-HEADINGS.
-           05 FILLER                  PIC X(28)
-              VALUE 'BRANCH NAME                 '.
-           05 FILLER                  PIC X(34)
-              VALUE 'BROKER NAME                       '.
-           05 FILLER                  PIC X(27)
-              VALUE 'SALES AMOUNT              '.
-           05 FILLER                  PIC X(26)
-              VALUE 'SHARE AMOUNT             '.
-           05 FILLER                  PIC X(17)
+       01  WS-COLUMN-HEADER.
+           05 FILLER PIC X(33)
+              VALUE 'BRANCH NAME'.
+           05 FILLER PIC X(36)
+              VALUE 'BROKER NAME'.
+           05 FILLER PIC X(27)
+              VALUE 'SALES AMOUNT'.
+           05 FILLER PIC X(26)
+              VALUE 'SHARE AMOUNT'.
+           05 FILLER PIC X(10)
               VALUE 'COMMISSION'.
 
-       01  WS-COLUMN-UNDERLINES.
-           05 FILLER                  PIC X(28)
-              VALUE '-------------------------   '.
-           05 FILLER                  PIC X(34)
-              VALUE '-------------------------         '.
-           05 FILLER                  PIC X(27)
-              VALUE '---------------            '.
-           05 FILLER                  PIC X(26)
-              VALUE '-------------------       '.
-           05 FILLER                  PIC X(17)
-              VALUE '---------------  '.
+       01  WS-COLUMN-UNDERLINE.
+           05 FILLER PIC X(33)
+              VALUE '-------------------------'.
+           05 FILLER PIC X(33)
+              VALUE '-------------------------'.
+           05 FILLER PIC X(23)
+              VALUE '---------------'.
+           05 FILLER PIC X(28)
+              VALUE '-------------------'.
+           05 FILLER PIC X(15)
+              VALUE '---------------'.
 
        LOCAL-STORAGE SECTION.
 
@@ -372,8 +373,8 @@
            WRITE REPORT-RECORD FROM WS-BLANK-ROW.
            WRITE REPORT-RECORD FROM WS-PAGE-HEADER-3.
            WRITE REPORT-RECORD FROM WS-BLANK-ROW.
-           WRITE REPORT-RECORD FROM WS-COLUMN-HEADINGS.
-           WRITE REPORT-RECORD FROM WS-COLUMN-UNDERLINES.
+           WRITE REPORT-RECORD FROM WS-COLUMN-HEADER.
+           WRITE REPORT-RECORD FROM WS-COLUMN-UNDERLINE.
            WRITE REPORT-RECORD FROM WS-BLANK-ROW.
 
            IF NOT REPORT-FILE-OK
@@ -458,7 +459,6 @@
 
 
        END PROGRAM SALESRPT.
-
 
 
 
