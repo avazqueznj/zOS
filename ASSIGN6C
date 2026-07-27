@@ -385,6 +385,7 @@
            MOVE WS-FORMAT     TO OUT-SALE-REC.
 
            WRITE REPORT-RECORD.
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW.
 
            IF NOT REPORT-FILE-OK
                DISPLAY 'FATAL: REPORT FILE WRITE ERROR: '
@@ -393,8 +394,8 @@
            END-IF.
 
       ** compute pagination **
-           COMPUTE WS-LINE-COUNT = WS-LINE-COUNT + 1.
-           IF WS-LINE-COUNT = 18
+           COMPUTE WS-LINE-COUNT = WS-LINE-COUNT + 2.
+           IF WS-LINE-COUNT >= 18
               COMPUTE WS-LINE-COUNT = 0
            END-IF.
 
