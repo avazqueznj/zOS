@@ -77,12 +77,15 @@
            RECORD CONTAINS 132 CHARACTERS.
 
        01  REPORT-RECORD.
-           05 OUT-BRANCH-NME          PIC X(20).
+           05 OUT-BRANCH-NME          PIC X(25).
            05 FILLER                  PIC X(8).
            05 OUT-BROKER-NME          PIC X(25).
+           05 FILLER                  PIC X(8).
+           05 OUT-DEP-AMT             PIC X(15) JUSTIFIED RIGHT.
+           05 FILLER                  PIC X(8).
+           05 OUT-SHR-AMT             PIC X(19) JUSTIFIED RIGHT.
            05 FILLER                  PIC X(9).
-           05 OUT-SALE-REC            PIC X(14).
-           05 FILLER                  PIC X(56).
+           05 OUT-COMM-AMT            PIC X(15) JUSTIFIED RIGHT.
 
 
        WORKING-STORAGE SECTION.
@@ -127,6 +130,10 @@
        01  WS-COMPANY-LENGTH          PIC 9(3) COMP  VALUE ZERO.
        01  WS-COMPANY-START           PIC 9(3) COMP  VALUE ZERO.
 
+       01  WS-SHR-AMT                 PIC 9(9)V9(4) VALUE ZERO.
+       01  WS-COMM-AMT                PIC 9(9)V99   VALUE ZERO.
+       01  WS-SHR-AMT-FORMAT          PIC Z,ZZZ,ZZ9.9999.
+       01  WS-COMM-AMT-FORMAT         PIC $$$,$$$,$$9.99.
 
       ** REPORT HEADER LINE 1 **
        01  WS-PAGE-HEADER-1.
@@ -375,14 +382,39 @@
               'BROKER=$' IN-BROKER-NME '$ '
               'AMOUNT=$' WS-FORMAT     '$ '
               'FLAG=$' IN-COMMISSION-FLAG '$'.
+      ** clear
+
+           MOVE SPACES TO REPORT-RECORD.
+
+      ** compute share qty and commission **
+
+           MOVE ZERO TO WS-SHR-AMT.
+           MOVE ZERO TO WS-COMM-AMT.
+
+           COMPUTE WS-SHR-AMT = IN-DEP-AMT / WS-SHARE-PRICE.
+           MOVE WS-SHR-AMT TO WS-SHR-AMT-FORMAT.
+           MOVE WS-SHR-AMT-FORMAT TO OUT-SHR-AMT.
+
+           EVALUATE IN-COMMISSION-FLAG
+              WHEN 1
+                 COMPUTE WS-COMM-AMT = (IN-DEP-AMT * WS-COM1) / 100
+              WHEN 2
+                 COMPUTE WS-COMM-AMT = (IN-DEP-AMT * WS-COM2) / 100
+              WHEN 3
+                 COMPUTE WS-COMM-AMT = (IN-DEP-AMT * WS-COM3) / 100
+               WHEN OTHER
+                 COMPUTE WS-COMM-AMT = 0
+           END-EVALUATE.
+
+           MOVE WS-COMM-AMT TO WS-COMM-AMT-FORMAT.
+           MOVE WS-COMM-AMT-FORMAT TO OUT-COMM-AMT.
 
       ** save record **
-           MOVE SPACES TO REPORT-RECORD.
 
            MOVE IN-BRANCH-NME TO OUT-BRANCH-NME.
            MOVE IN-BROKER-NME TO OUT-BROKER-NME.
            MOVE IN-DEP-AMT    TO WS-FORMAT.
-           MOVE WS-FORMAT     TO OUT-SALE-REC.
+           MOVE WS-FORMAT TO OUT-DEP-AMT.
 
            WRITE REPORT-RECORD.
            WRITE REPORT-RECORD FROM WS-BLANK-ROW.
@@ -395,7 +427,7 @@
 
       ** compute pagination **
            COMPUTE WS-LINE-COUNT = WS-LINE-COUNT + 2.
-           IF WS-LINE-COUNT >= 18
+           IF WS-LINE-COUNT >= 36
               COMPUTE WS-LINE-COUNT = 0
            END-IF.
 
