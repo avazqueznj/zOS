@@ -2,7 +2,7 @@
 //*
 //***************************************************************
 //*                                                             *
-//*  COBOL              ASSIGNMENT 7                            *
+//*  COBOL              ASSIGNMENT 7 v2                         *
 //*                                                             *
 //***************************************************************
 //*
@@ -167,35 +167,47 @@
        01  WS-LINE-COUNT    PIC S9(4) BINARY         VALUE ZERO.
        01  WS-PAGE-COUNT    PIC 9(4)  PACKED-DECIMAL VALUE ZERO.
 
+
        01  WS-REPORT-CONTROL.
-           05 WS-SHARE-PRICE          PIC 9(3)V99    VALUE ZERO.
-           05 WS-MUTUAL-FUND-NAME     PIC X(35)      VALUE SPACES.
-           05 WS-COM1                 PIC 9(3)V9(3)  VALUE ZERO.
-           05 WS-COM2                 PIC 9(3)V9(3)  VALUE ZERO.
-           05 WS-COM3                 PIC 9(3)V9(3)  VALUE ZERO.
-       01  WS-SHARE-PRICE-FORMAT      PIC $$$9.99    VALUE ZERO.
+           05 WS-SHARE-PRICE          PIC 9(3)V99
+                                      PACKED-DECIMAL VALUE ZERO.
+           05 WS-MUTUAL-FUND-NAME     PIC X(35)
+                                      VALUE SPACES.
+           05 WS-COM1                 PIC 9(3)V9(3)
+                                      PACKED-DECIMAL VALUE ZERO.
+           05 WS-COM2                 PIC 9(3)V9(3)
+                                      PACKED-DECIMAL VALUE ZERO.
+           05 WS-COM3                 PIC 9(3)V9(3)
+                                      PACKED-DECIMAL VALUE ZERO.
 
-       01  WS-COMPANY-NAME-TRIMMED    PIC X(35)      VALUE SPACES.
-       01  WS-COMPANY-LENGTH          PIC 9(3) COMP  VALUE ZERO.
-       01  WS-COMPANY-START           PIC 9(3) COMP  VALUE ZERO.
+       01  WS-SHARE-PRICE-FORMAT      PIC $$$9.99 VALUE ZERO.
+       01  WS-COMPANY-NAME-TRIMMED    PIC X(35) VALUE SPACES.
+       01  WS-COMPANY-LENGTH          PIC 9(3) BINARY VALUE ZERO.
+       01  WS-COMPANY-START           PIC 9(3) BINARY VALUE ZERO.
+       01  WS-SHR-AMT                 PIC 9(9)V9(4)
+                                      PACKED-DECIMAL VALUE ZERO.
+       01  WS-COMM-AMT                PIC 9(9)V99
+                                      PACKED-DECIMAL VALUE ZERO.
+       01  WS-TOT-SALES               PIC 9(3)
+                                      PACKED-DECIMAL VALUE ZERO.
+       01  WS-TOT-DEP-AMT             PIC 9(9)V99
+                                      PACKED-DECIMAL VALUE ZERO.
+       01  WS-TOT-SHR-AMT             PIC 9(9)V9999
+                                      PACKED-DECIMAL VALUE ZERO.
+       01  WS-TOT-COMM-AMT            PIC 9(9)V99
+                                      PACKED-DECIMAL VALUE ZERO.
+       01  WS-TOT-HS-SHR-CNT          PIC 9(3)
+                                      PACKED-DECIMAL VALUE ZERO.
+       01  WS-TOT-HS-SHR-AMT          PIC 9(9)V9999
+                                      PACKED-DECIMAL VALUE ZERO.
 
-       01  WS-SHR-AMT                 PIC 9(9)V9(4) VALUE ZERO.
-       01  WS-COMM-AMT                PIC 9(9)V99   VALUE ZERO.
        01  WS-SHR-AMT-FORMAT          PIC Z,ZZZ,ZZ9.9999.
        01  WS-COMM-AMT-FORMAT         PIC $$$,$$$,$$9.99.
-
-       01  WS-TOT-SALES               PIC 9(9)V99   VALUE ZERO.
-       01  WS-TOT-DEP-AMT             PIC 9(9)V99   VALUE ZERO.
-       01  WS-TOT-SHR-AMT             PIC 9(9)V9999 VALUE ZERO.
-       01  WS-TOT-COMM-AMT            PIC 9(9)V99   VALUE ZERO.
 
        01  WS-TOT-SALES-FORMAT       PIC ZZ9.
        01  WS-TOT-DEP-AMT-FORMAT     PIC $$$,$$$,$$$,$$9.99.
        01  WS-TOT-SHR-AMT-FORMAT     PIC ZZ,ZZZ,ZZZ,ZZ9.9999.
        01  WS-TOT-COMM-AMT-FORMAT    PIC $$$,$$$,$$9.99.
-
-       01  WS-TOT-HS-SHR-CNT         PIC 9(3)      VALUE ZERO.
-       01  WS-TOT-HS-SHR-AMT         PIC 9(9)V9999 VALUE ZERO.
 
       ** REPORT HEADER LINE 1 **
        01  WS-PAGE-HEADER-1.
@@ -532,6 +544,8 @@
 
        230-WRITE-PAGE-HEADER.
 
+           DISPLAY 'WRITE HEADER ...'.
+
            COMPUTE  WS-PAGE-COUNT = WS-PAGE-COUNT + 1.
            MOVE WS-PAGE-COUNT TO WS-HEADER-PAGE-NUM.
 
@@ -550,6 +564,8 @@
 
        240-WRITE-COLUMN-HEADERS.
 
+           DISPLAY 'WRITE COL HEADER ...'.
+
            WRITE REPORT-RECORD FROM WS-COLUMN-HEADER.
            WRITE REPORT-RECORD FROM WS-COLUMN-UNDERLINE.
            WRITE REPORT-RECORD FROM WS-BLANK-ROW.
@@ -561,6 +577,8 @@
            END-IF.
 
        250-WRITE-HIGH-SALES-HEADER.
+
+           DISPLAY 'WRITE HS HEADER ...'.
 
            MOVE ZERO TO WS-LINE-COUNT.
            COMPUTE  WS-PAGE-COUNT = WS-PAGE-COUNT + 1.
@@ -577,6 +595,8 @@
            END-IF.
 
        260-WRITE-HIGH-SALES-COL-HEADR.
+
+           DISPLAY 'WRITE HS COL HEADER ...'.
 
            WRITE REPORT-RECORD FROM WS-HIGH-SALES-COLUMN-HEADERS.
            WRITE REPORT-RECORD FROM WS-HIGH-SALES-UNDERLINES.
@@ -858,7 +878,7 @@
 //            DISP=(NEW,CATLG,DELETE),
 //            UNIT=SYSDA,
 //            SPACE=(TRK,(1,1)),
-//            DCB=(RECFM=FB,LRECL=38,BLKSIZE=0)
+//            DCB=(RECFM=FB,LRECL=32,BLKSIZE=0)
 //*
 //SYSOUT   DD SYSOUT=*
 //*

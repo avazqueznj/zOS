@@ -81,7 +81,7 @@
 //            DISP=(NEW,CATLG,DELETE),
 //            UNIT=SYSDA,
 //            SPACE=(TRK,(1,1)),
-//            DCB=(RECFM=FB,LRECL=38,BLKSIZE=0)
+//            DCB=(RECFM=FB,LRECL=32,BLKSIZE=0)
 //*
 //SYSOUT   DD SYSOUT=*
 //*

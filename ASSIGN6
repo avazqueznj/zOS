@@ -2,7 +2,7 @@
 //*
 //***************************************************************
 //*                                                             *
-//*  COBOL              ASSIGNMENT 6                            *
+//*  COBOL              ASSIGNMENT 6 v2                         *
 //*                                                             *
 //***************************************************************
 //*
@@ -143,26 +143,38 @@
        01  WS-PAGE-COUNT    PIC 9(4)  PACKED-DECIMAL VALUE ZERO.
 
        01  WS-REPORT-CONTROL.
-           05 WS-SHARE-PRICE          PIC 9(3)V99    VALUE ZERO.
-           05 WS-MUTUAL-FUND-NAME     PIC X(35)      VALUE SPACES.
-           05 WS-COM1                 PIC 9(3)V9(3)  VALUE ZERO.
-           05 WS-COM2                 PIC 9(3)V9(3)  VALUE ZERO.
-           05 WS-COM3                 PIC 9(3)V9(3)  VALUE ZERO.
+           05 WS-SHARE-PRICE          PIC 9(3)V99
+                                      PACKED-DECIMAL VALUE ZERO.
+           05 WS-MUTUAL-FUND-NAME     PIC X(35)
+                                      VALUE SPACES.
+           05 WS-COM1                 PIC 9(3)V9(3)
+                                      PACKED-DECIMAL VALUE ZERO.
+           05 WS-COM2                 PIC 9(3)V9(3)
+                                      PACKED-DECIMAL VALUE ZERO.
+           05 WS-COM3                 PIC 9(3)V9(3)
+                                      PACKED-DECIMAL VALUE ZERO.
+
+
        01  WS-SHARE-PRICE-FORMAT      PIC $$$9.99    VALUE ZERO.
 
        01  WS-COMPANY-NAME-TRIMMED    PIC X(35)      VALUE SPACES.
        01  WS-COMPANY-LENGTH          PIC 9(3) COMP  VALUE ZERO.
        01  WS-COMPANY-START           PIC 9(3) COMP  VALUE ZERO.
 
-       01  WS-SHR-AMT                 PIC 9(9)V9(4) VALUE ZERO.
-       01  WS-COMM-AMT                PIC 9(9)V99   VALUE ZERO.
+       01  WS-SHR-AMT                 PIC 9(9)V9(4)
+                                      PACKED-DECIMAL VALUE ZERO.
+       01  WS-COMM-AMT                PIC 9(9)V99
+                                      PACKED-DECIMAL VALUE ZERO.
        01  WS-SHR-AMT-FORMAT          PIC Z,ZZZ,ZZ9.9999.
        01  WS-COMM-AMT-FORMAT         PIC $$$,$$$,$$9.99.
-
-       01  WS-TOT-SALES               PIC 9(9)V99   VALUE ZERO.
-       01  WS-TOT-DEP-AMT             PIC 9(9)V99   VALUE ZERO.
-       01  WS-TOT-SHR-AMT             PIC 9(9)V9999 VALUE ZERO.
-       01  WS-TOT-COMM-AMT            PIC 9(9)V99   VALUE ZERO.
+       01  WS-TOT-SALES               PIC 9(9)V99
+                                      PACKED-DECIMAL VALUE ZERO.
+       01  WS-TOT-DEP-AMT             PIC 9(9)V99
+                                      PACKED-DECIMAL VALUE ZERO.
+       01  WS-TOT-SHR-AMT             PIC 9(9)V9999
+                                      PACKED-DECIMAL VALUE ZERO.
+       01  WS-TOT-COMM-AMT            PIC 9(9)V99
+                                      PACKED-DECIMAL VALUE ZERO.
 
        01  WS-TOT-SALES-FORMAT       PIC ZZ9.
        01  WS-TOT-DEP-AMT-FORMAT     PIC $$$,$$$,$$$,$$9.99.
@@ -237,8 +249,7 @@
            05 FILLER PIC X(15)
               VALUE '---------------'.
 
-      **                                  **  REPORT SUMMARY **
-
+      ** REPORT SUMMARY **
       ** TOTALS COLUMN HEADINGS **
        01  WS-TOTALS-HEADER.
            05 FILLER              PIC X(35) VALUE SPACES.
