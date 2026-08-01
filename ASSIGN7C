@@ -208,28 +208,18 @@
 
       ** COLUMN HEADINGS **
        01  WS-COLUMN-HEADER.
-           05 FILLER PIC X(33)
-              VALUE 'BRANCH NAME'.
-           05 FILLER PIC X(36)
-              VALUE 'BROKER NAME'.
-           05 FILLER PIC X(27)
-              VALUE 'SALES AMOUNT'.
-           05 FILLER PIC X(26)
-              VALUE 'SHARE AMOUNT'.
-           05 FILLER PIC X(10)
-              VALUE 'COMMISSION'.
+           05 FILLER PIC X(33) VALUE 'BRANCH NAME'.
+           05 FILLER PIC X(36) VALUE 'BROKER NAME'.
+           05 FILLER PIC X(27) VALUE 'SALES AMOUNT'.
+           05 FILLER PIC X(26) VALUE 'SHARE AMOUNT'.
+           05 FILLER PIC X(10) VALUE 'COMMISSION'.
 
        01  WS-COLUMN-UNDERLINE.
-           05 FILLER PIC X(33)
-              VALUE '-------------------------'.
-           05 FILLER PIC X(33)
-              VALUE '-------------------------'.
-           05 FILLER PIC X(23)
-              VALUE '---------------'.
-           05 FILLER PIC X(28)
-              VALUE '-------------------'.
-           05 FILLER PIC X(15)
-              VALUE '---------------'.
+           05 FILLER PIC X(33) VALUE '-------------------------'.
+           05 FILLER PIC X(33) VALUE '-------------------------'.
+           05 FILLER PIC X(23) VALUE '---------------'.
+           05 FILLER PIC X(28) VALUE '-------------------'.
+           05 FILLER PIC X(15) VALUE '---------------'.
 
       ** REPORT SUMMARY **
        01  WS-TOTALS-HEADER.
@@ -267,6 +257,28 @@
            05 OUT-TOT-COMM-AMT        PIC X(16) JUSTIFIED RIGHT.
            05 FILLER                  PIC X     VALUE SPACE.
 
+      ** HIGH SALES SUB REPORT **
+
+       01  WS-HIGH-SALES-DETAIL.
+           05 FILLER                       PIC X(37) VALUE SPACES.
+           05 WS-HIGH-SALES-BROKER-NAME    PIC X(25).
+           05 FILLER                       PIC X(17) VALUE SPACES.
+           05 WS-HIGH-SALES-SHARE-AMOUNT  PIC ZZZ,ZZZ,ZZ9.9999.
+           05 FILLER                       PIC X(37) VALUE SPACES.
+
+       01  WS-HIGH-SALES-COLUMN-HEADERS.
+           05 FILLER PIC X(37) VALUE SPACES.
+           05 FILLER PIC X(25) VALUE 'HIGH SALES BROKER NAME'.
+           05 FILLER PIC X(10) VALUE SPACES.
+           05 FILLER PIC X(23) VALUE 'HIGH SALES SHARE AMOUNT'.
+           05 FILLER PIC X(37) VALUE SPACES.
+
+       01  WS-HIGH-SALES-UNDERLINES.
+           05 FILLER PIC X(37) VALUE SPACES.
+           05 FILLER PIC X(25) VALUE ALL '-'.
+           05 FILLER PIC X(10) VALUE SPACES.
+           05 FILLER PIC X(23) VALUE ALL '-'.
+           05 FILLER PIC X(37) VALUE SPACES.
 
        LOCAL-STORAGE SECTION.
 
@@ -278,27 +290,25 @@
 
            DISPLAY 'SALESRPT STARTING... V7.1'.
 
+      *    OPEN FILES
            PERFORM 100-OPEN-SALE-FILE.
-
            PERFORM 110-OPEN-REPORT-FILE.
+           PERFORM 120-OPEN-TEMP-FILE-WRITE.
 
-           PERFORM 120-OPEN-TEMP-FILE.
-
-
+      *    PROCESS REPORT
            PERFORM 210-READ-HEADER-RECORD.
-
            PERFORM 220-PREPARE-HEADER.
-
            PERFORM 200-PROCESS-SALE-FILE.
+           PERFORM 310-PROCESS-SALES-SUMMARY
 
-           PERFORM 300-PROCESS-REPORT-SUMMARY
+      *    PROCESS HIGH SALES REPORT
+           PERFORM 420-CLOSE-TEMP-FILE.
+           PERFORM 130-OPEN-TEMP-FILE-READ.
+           PERFORM 320-PROCESS-HIGH-SALES.
 
-
-
+      *    CLOSE FILES
            PERFORM 400-CLOSE-SALE-FILE.
-
            PERFORM 410-CLOSE-REPORT-FILE.
-
            PERFORM 420-CLOSE-TEMP-FILE.
 
            STOP RUN.
@@ -330,9 +340,9 @@
            END-IF.
 
 
-       120-OPEN-TEMP-FILE.
+       120-OPEN-TEMP-FILE-WRITE.
 
-           DISPLAY 'OPENING TEMP FILE...'.
+           DISPLAY 'OPENING TEMP FILE... WRITE'.
 
            OPEN OUTPUT TEMP-SALES-FILE.
 
@@ -342,20 +352,18 @@
               STOP RUN
            END-IF.
 
-      *  TEST IT  ------
 
-           MOVE 'ALEJANDRO' TO TEMP-BROKER-NAME.
-           MOVE 123.45 TO TEMP-SHARE-AMOUNT.
+       130-OPEN-TEMP-FILE-READ.
 
-           WRITE TEMP-SALES-RECORD.
+           DISPLAY 'OPENING TEMP FILE... READ'.
+
+           OPEN INPUT TEMP-SALES-FILE.
 
            IF NOT TEMP-FILE-OK
-               DISPLAY 'FATAL: ** TEMP *** FILE WRITE ERROR: '
+              DISPLAY 'FATAL: TEMP FILE OPEN ERROR: '
                    WS-TEMP-FILE-STATUS
-               STOP RUN
+              STOP RUN
            END-IF.
-
-      * ----------------
 
        200-PROCESS-SALE-FILE.
 
@@ -364,7 +372,7 @@
                   AT END
                       SET END-OF-FILE TO TRUE
                   NOT AT END
-                      PERFORM 250-PROCESS-SALES-RECORD
+                      PERFORM 300-PROCESS-SALES
               END-READ
            END-PERFORM.
 
@@ -473,11 +481,26 @@
                STOP RUN
            END-IF.
 
+       250-WRITE-HIGH-SALES-HEADER.
 
+           COMPUTE  WS-PAGE-COUNT = WS-PAGE-COUNT + 1.
+           MOVE WS-PAGE-COUNT TO WS-HEADER-PAGE-NUM.
+
+           WRITE REPORT-RECORD FROM WS-PAGE-HEADER-1.
+           WRITE REPORT-RECORD FROM WS-PAGE-HEADER-2.
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW.
+           WRITE REPORT-RECORD FROM WS-PAGE-HEADER-3.
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW.
+
+           IF NOT REPORT-FILE-OK
+               DISPLAY 'FATAL: REPORT FILE WRITE ERROR: '
+                   WS-REPORT-FILE-STATUS
+               STOP RUN
+           END-IF.
 
       **********************************************************************
 
-       250-PROCESS-SALES-RECORD.
+       300-PROCESS-SALES.
 
       **  PRINT HEADER IF NEEDED **
            IF WS-LINE-COUNT = 0 THEN
@@ -528,7 +551,13 @@
       ** SAVE TEMP HIGH SHR QTY RECORD FOR
       **   BROKERS WHERE SHR QTY  > 150,000.
 
+           DISPLAY
+              ' IS BROKER=$' IN-BROKER-NME '$ '
+              ' HIGH ?  AMOUNT=$' WS-FORMAT.
+
            IF WS-SHR-AMT > 150000
+
+               DISPLAY 'yes'
 
                MOVE IN-BROKER-NME TO TEMP-BROKER-NAME
                MOVE WS-SHR-AMT    TO TEMP-SHARE-AMOUNT
@@ -567,7 +596,7 @@
       ** DONE.
 
 
-       300-PROCESS-REPORT-SUMMARY.
+       310-PROCESS-SALES-SUMMARY.
 
            PERFORM 230-WRITE-PAGE-HEADER
 
@@ -591,6 +620,34 @@
            WRITE REPORT-RECORD FROM WS-TOTALS-UNDERLINE
            WRITE REPORT-RECORD FROM WS-BLANK-ROW
            WRITE REPORT-RECORD FROM WS-TOTALS-RECORD.
+
+       320-PROCESS-HIGH-SALES.
+
+      *    PRINT HEADER
+           PERFORM 250-WRITE-HIGH-SALES-HEADER.
+
+      *    RESET EOF FLAG
+           SET NOT-END-OF-FILE TO TRUE.
+
+      *    PROCESS
+           PERFORM UNTIL END-OF-FILE
+              READ TEMP-SALES-FILE
+                 AT END
+                     SET END-OF-FILE TO TRUE
+                 NOT AT END
+
+                 MOVE TEMP-BROKER-NAME
+                    TO WS-HIGH-SALES-BROKER-NAME
+                 MOVE TEMP-SHARE-AMOUNT
+                    TO WS-HIGH-SALES-SHARE-AMOUNT
+
+                 WRITE REPORT-RECORD FROM WS-HIGH-SALES-DETAIL
+                 WRITE REPORT-RECORD FROM WS-BLANK-ROW
+
+              END-READ
+           END-PERFORM.
+
+      *     PRINT FINAL SUMMARY
 
 
        400-CLOSE-SALE-FILE.
