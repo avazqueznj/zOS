@@ -1,0 +1,616 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.    SALESRPT.
+       AUTHOR.        A. VAZQUEZ.
+       DATE-WRITTEN.  07/24/2026.
+
+      ****************************************************************
+      *                                                              *
+      *  PROGRAM NAME:  SALESRPT                                     *
+      *                                                              *
+      *  PURPOSE:  EMMA ASSIGNMENT 7. REV1                           *
+      *            READ DATA FILE WITH COLUMNAR DATA AND             *
+      *            MAKE A COLUMNAR REPORT WITH HEADER, STRINGS       *
+      *            NUMBERS, TOTAL SUMMARIES, AND HIGH SALES REPORT.  *
+      *                                                              *
+      *                                                              *
+      *  INPUT:   DSN=EMMA.COBOL.ASNDATA(DATA6)                      *
+      *                                                              *
+      *  OUTPUT:  DSN=EMMA101.COBOL.SALESRPT                         *
+      *                                                              *
+      *  ENTRY CONDITION:                                            *
+      *           1. INPUT FILE IS NOT EMPTY                         *
+      *                                                              *
+      *  EXIT CONDITION:                                             *
+      *           1. OUTPUT FILE IS NOT EMPTY                        *
+      *  NOTES:                                                      *
+      *                                                              *
+      *                                                              *
+      ****************************************************************
+
+       ENVIRONMENT DIVISION.
+
+       INPUT-OUTPUT SECTION.
+
+       FILE-CONTROL.
+           SELECT SALE-FILE
+               ASSIGN TO SALEFILE
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-SALE-FILE-STATUS.
+
+           SELECT REPORT-FILE
+               ASSIGN TO REPORTFL
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-REPORT-FILE-STATUS.
+
+           SELECT TEMP-SALES-FILE
+               ASSIGN TO TEMPSLRP
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-TEMP-FILE-STATUS.
+
+
+       DATA DIVISION.
+       FILE SECTION.
+
+       FD  SALE-FILE
+           RECORDING MODE IS F
+           RECORD CONTAINS 80 CHARACTERS.
+
+      * MAP FOR FIRST ROW *
+       01  SALE-HEADER-RECORD.
+           05 IN-SHARE-PRICE          PIC 9(3)V99.
+           05 IN-MUTUAL-FUND-NAME     PIC X(35).
+           05 IN-COMMISSION-PCT-1     PIC 9(3)V9(3).
+           05 IN-COMMISSION-PCT-2     PIC 9(3)V9(3).
+           05 IN-COMMISSION-PCT-3     PIC 9(3)V9(3).
+           05 FILLER                  PIC X(22).
+
+      * MAP FOR DETAIL RECORDS *
+       01  SALE-RECORD.
+           05 IN-BRANCH-NME           PIC X(20).
+           05 IN-BROKER-NME           PIC X(25).
+           05 FILLER                  PIC X(1).
+           05 IN-DEP-AMT              PIC 9(8)V99.
+           05 FILLER                  PIC X(3).
+           05 IN-COMMISSION-FLAG      PIC 9.
+           05 FILLER                  PIC X(20).
+
+
+       FD  REPORT-FILE
+           RECORDING MODE IS F
+           RECORD CONTAINS 132 CHARACTERS.
+
+       01  REPORT-RECORD.
+           05 OUT-BRANCH-NME          PIC X(25).
+           05 FILLER                  PIC X(8).
+           05 OUT-BROKER-NME          PIC X(25).
+           05 FILLER                  PIC X(8).
+           05 OUT-DEP-AMT             PIC X(15) JUSTIFIED RIGHT.
+           05 FILLER                  PIC X(8).
+           05 OUT-SHR-AMT             PIC X(19) JUSTIFIED RIGHT.
+           05 FILLER                  PIC X(9).
+           05 OUT-COMM-AMT            PIC X(15) JUSTIFIED RIGHT.
+
+
+       FD  TEMP-SALES-FILE
+           RECORDING MODE IS F
+           RECORD CONTAINS 38 CHARACTERS.
+
+       01  TEMP-SALES-RECORD.
+           05 TEMP-BROKER-NAME        PIC X(25).
+           05 TEMP-SHARE-AMOUNT       PIC 9(9)V9(4).
+
+
+       WORKING-STORAGE SECTION.
+
+       01 WS-FORMAT                   PIC $$$,$$$,$$9.99 VALUE ZERO.
+
+       01  WS-SALE-FILE-STATUS        PIC XX.
+           88 SALE-FILE-OK            VALUE '00'.
+
+       01  WS-REPORT-FILE-STATUS      PIC XX.
+           88 REPORT-FILE-OK          VALUE '00'.
+
+       01  WS-TEMP-FILE-STATUS        PIC XX.
+           88 TEMP-FILE-OK            VALUE '00'.
+
+      ** FILE READ STATUS FLAG AND 88 VALUES **
+       01  WS-END-OF-FILE             PIC X VALUE 'N'.
+           88 END-OF-FILE             VALUE 'Y'.
+           88 NOT-END-OF-FILE         VALUE 'N'.
+
+      ** DATE FIELDS
+       01  WS-CURRENT-DATE.
+           05 CURRENT-YEAR           PIC X(4).
+           05 CURRENT-MONTH          PIC X(2).
+           05 CURRENT-DAY            PIC X(2).
+           05 CURRENT-TIME           PIC X(6).
+           05 CURRENT-HUNDREDTHS     PIC X(2).
+           05 CURRENT-OFFSET         PIC X(5).
+
+      *              *** REPORT DATA ***
+
+     ** REPORT STATE **
+       01  WS-LINE-COUNT    PIC S9(4) BINARY         VALUE ZERO.
+       01  WS-PAGE-COUNT    PIC 9(4)  PACKED-DECIMAL VALUE ZERO.
+
+       01  WS-REPORT-CONTROL.
+           05 WS-SHARE-PRICE          PIC 9(3)V99    VALUE ZERO.
+           05 WS-MUTUAL-FUND-NAME     PIC X(35)      VALUE SPACES.
+           05 WS-COM1                 PIC 9(3)V9(3)  VALUE ZERO.
+           05 WS-COM2                 PIC 9(3)V9(3)  VALUE ZERO.
+           05 WS-COM3                 PIC 9(3)V9(3)  VALUE ZERO.
+       01  WS-SHARE-PRICE-FORMAT      PIC $$$9.99    VALUE ZERO.
+
+       01  WS-COMPANY-NAME-TRIMMED    PIC X(35)      VALUE SPACES.
+       01  WS-COMPANY-LENGTH          PIC 9(3) COMP  VALUE ZERO.
+       01  WS-COMPANY-START           PIC 9(3) COMP  VALUE ZERO.
+
+       01  WS-SHR-AMT                 PIC 9(9)V9(4) VALUE ZERO.
+       01  WS-COMM-AMT                PIC 9(9)V99   VALUE ZERO.
+       01  WS-SHR-AMT-FORMAT          PIC Z,ZZZ,ZZ9.9999.
+       01  WS-COMM-AMT-FORMAT         PIC $$$,$$$,$$9.99.
+
+       01  WS-TOT-SALES               PIC 9(9)V99   VALUE ZERO.
+       01  WS-TOT-DEP-AMT             PIC 9(9)V99   VALUE ZERO.
+       01  WS-TOT-SHR-AMT             PIC 9(9)V9999 VALUE ZERO.
+       01  WS-TOT-COMM-AMT            PIC 9(9)V99   VALUE ZERO.
+
+       01  WS-TOT-SALES-FORMAT       PIC ZZ9.
+       01  WS-TOT-DEP-AMT-FORMAT     PIC $$$,$$$,$$$,$$9.99.
+       01  WS-TOT-SHR-AMT-FORMAT     PIC ZZ,ZZZ,ZZZ,ZZ9.9999.
+       01  WS-TOT-COMM-AMT-FORMAT    PIC $$$,$$$,$$9.99.
+
+      ** REPORT HEADER LINE 1 **
+       01  WS-PAGE-HEADER-1.
+           05 WS-HEADER-DATE.
+              10 CURRENT-MONTH        PIC X(2).
+              10 FILLER               PIC X          VALUE '/'.
+              10 CURRENT-DAY          PIC X(2).
+              10 FILLER               PIC X          VALUE '/'.
+              10 CURRENT-YEAR         PIC X(4).
+           05 WS-HEADER-INNER-SPACE   PIC X(109) VALUE SPACES.
+           05 FILLER                  PIC X(9)
+              VALUE '    PAGE:'.
+           05 FILLER                  PIC X
+              VALUE SPACE.
+           05 WS-HEADER-PAGE-NUM      PIC ZZ9.
+
+      ** REPORT HEADER LINE 2 **
+       01  WS-PAGE-HEADER-2.
+           05 WS-HEADER-TIME.
+              10 WS-HEADER-HOUR       PIC 99.
+              10 FILLER               PIC X
+                                      VALUE ':'.
+              10 WS-HEADER-MINUTE     PIC X(2).
+              10 FILLER               PIC X
+                                      VALUE SPACE.
+              10 WS-HEADER-AM-PM      PIC X(2).
+           05 FILLER                  PIC X(39)
+                                      VALUE SPACES.
+           05 FILLER                  PIC X(35)
+              VALUE 'BROKER SALES AND COMMISSIONS REPORT'.
+           05 FILLER                  PIC X(50)
+                                      VALUE SPACES.
+
+      ** REPORT SPACE **
+       01  WS-BLANK-ROW               PIC X(132)     VALUE SPACES.
+
+      ** REPORT HEADER LINE 3 **
+       01  WS-PAGE-HEADER-3.
+           05 FILLER                  PIC X(55)      VALUE SPACES.
+           05 FILLER                  PIC X(14)
+              VALUE 'SHARE PRICE:  '.
+           05 WS-HEADER-SHARE-PRICE   PIC X(7).
+           05 FILLER                  PIC X(56)      VALUE SPACES.
+
+      ** COLUMN HEADINGS **
+       01  WS-COLUMN-HEADER.
+           05 FILLER PIC X(33)
+              VALUE 'BRANCH NAME'.
+           05 FILLER PIC X(36)
+              VALUE 'BROKER NAME'.
+           05 FILLER PIC X(27)
+              VALUE 'SALES AMOUNT'.
+           05 FILLER PIC X(26)
+              VALUE 'SHARE AMOUNT'.
+           05 FILLER PIC X(10)
+              VALUE 'COMMISSION'.
+
+       01  WS-COLUMN-UNDERLINE.
+           05 FILLER PIC X(33)
+              VALUE '-------------------------'.
+           05 FILLER PIC X(33)
+              VALUE '-------------------------'.
+           05 FILLER PIC X(23)
+              VALUE '---------------'.
+           05 FILLER PIC X(28)
+              VALUE '-------------------'.
+           05 FILLER PIC X(15)
+              VALUE '---------------'.
+
+      ** REPORT SUMMARY **
+       01  WS-TOTALS-HEADER.
+           05 FILLER              PIC X(35) VALUE SPACES.
+           05 FILLER              PIC X(15) VALUE 'NUMBER OF SALES'.
+           05 FILLER              PIC X(14) VALUE SPACES.
+           05 FILLER              PIC X(18) VALUE 'TOTAL SALES AMOUNT'.
+           05 FILLER              PIC X(8)  VALUE SPACES.
+           05 FILLER              PIC X(18) VALUE 'TOTAL SHARE AMOUNT'.
+           05 FILLER              PIC X(7)  VALUE SPACES.
+           05 FILLER              PIC X(16) VALUE 'TOTAL COMMISSION'.
+           05 FILLER              PIC X     VALUE SPACE.
+
+      ** TOTALS COLUMN UNDERLINES **
+       01  WS-TOTALS-UNDERLINE.
+           05 FILLER              PIC X(35) VALUE SPACES.
+           05 FILLER              PIC X(15) VALUE '---------------'.
+           05 FILLER              PIC X(14) VALUE SPACES.
+           05 FILLER              PIC X(18) VALUE '------------------'.
+           05 FILLER              PIC X(8)  VALUE SPACES.
+           05 FILLER              PIC X(18) VALUE '------------------'.
+           05 FILLER              PIC X(7)  VALUE SPACES.
+           05 FILLER              PIC X(16) VALUE '----------------'.
+           05 FILLER              PIC X     VALUE SPACE.
+
+      ** TOTALS VALUES **
+       01  WS-TOTALS-RECORD.
+           05 FILLER                  PIC X(35) VALUE SPACES.
+           05 OUT-NUMBER-OF-SALES     PIC X(15) JUSTIFIED RIGHT.
+           05 FILLER                  PIC X(14) VALUE SPACES.
+           05 OUT-TOT-DEP-AMT         PIC X(18) JUSTIFIED RIGHT.
+           05 FILLER                  PIC X(8)  VALUE SPACES.
+           05 OUT-TOT-SHR-AMT         PIC X(18) JUSTIFIED RIGHT.
+           05 FILLER                  PIC X(7)  VALUE SPACES.
+           05 OUT-TOT-COMM-AMT        PIC X(16) JUSTIFIED RIGHT.
+           05 FILLER                  PIC X     VALUE SPACE.
+
+
+       LOCAL-STORAGE SECTION.
+
+      *************************************************************
+       PROCEDURE DIVISION.
+      *************************************************************
+
+       000-MAIN.
+
+           DISPLAY 'SALESRPT STARTING... V7.1'.
+
+           PERFORM 100-OPEN-SALE-FILE.
+
+           PERFORM 110-OPEN-REPORT-FILE.
+
+           PERFORM 120-OPEN-TEMP-FILE.
+
+
+           PERFORM 210-READ-HEADER-RECORD.
+
+           PERFORM 220-PREPARE-HEADER.
+
+           PERFORM 200-PROCESS-SALE-FILE.
+
+           PERFORM 300-PROCESS-REPORT-SUMMARY
+
+
+
+           PERFORM 400-CLOSE-SALE-FILE.
+
+           PERFORM 410-CLOSE-REPORT-FILE.
+
+           PERFORM 420-CLOSE-TEMP-FILE.
+
+           STOP RUN.
+
+
+       100-OPEN-SALE-FILE.
+
+           DISPLAY 'OPENING SALE FILE...'.
+
+           OPEN INPUT SALE-FILE.
+
+           IF NOT SALE-FILE-OK
+              DISPLAY 'FATAL: SALE FILE OPEN ERROR: '
+                   WS-SALE-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
+       110-OPEN-REPORT-FILE.
+
+           DISPLAY 'OPENING REPORT FILE...'.
+
+           OPEN OUTPUT REPORT-FILE.
+
+           IF NOT REPORT-FILE-OK
+              DISPLAY 'FATAL: REPORT FILE OPEN ERROR: '
+                   WS-REPORT-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
+       120-OPEN-TEMP-FILE.
+
+           DISPLAY 'OPENING TEMP FILE...'.
+
+           OPEN OUTPUT TEMP-SALES-FILE.
+
+           IF NOT TEMP-FILE-OK
+              DISPLAY 'FATAL: TEMP FILE OPEN ERROR: '
+                   WS-TEMP-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+      *  TEST IT  ------
+
+           MOVE 'ALEJANDRO' TO TEMP-BROKER-NAME.
+           MOVE 123.45 TO TEMP-SHARE-AMOUNT.
+
+           WRITE TEMP-SALES-RECORD.
+
+           IF NOT TEMP-FILE-OK
+               DISPLAY 'FATAL: ** TEMP *** FILE WRITE ERROR: '
+                   WS-TEMP-FILE-STATUS
+               STOP RUN
+           END-IF.
+
+      * ----------------
+
+       200-PROCESS-SALE-FILE.
+
+           PERFORM UNTIL END-OF-FILE
+              READ SALE-FILE
+                  AT END
+                      SET END-OF-FILE TO TRUE
+                  NOT AT END
+                      PERFORM 250-PROCESS-SALES-RECORD
+              END-READ
+           END-PERFORM.
+
+
+       210-READ-HEADER-RECORD.
+
+           DISPLAY 'READING HEADER RECORD'.
+
+           READ SALE-FILE
+               AT END
+                   DISPLAY 'FATAL: HEADER RECORD NOT FOUND'
+                   STOP RUN
+               NOT AT END
+                   MOVE IN-SHARE-PRICE TO WS-SHARE-PRICE
+                   MOVE IN-MUTUAL-FUND-NAME TO WS-MUTUAL-FUND-NAME
+                   MOVE IN-COMMISSION-PCT-1 TO WS-COM1
+                   MOVE IN-COMMISSION-PCT-2 TO WS-COM2
+                   MOVE IN-COMMISSION-PCT-3 TO WS-COM3
+                   DISPLAY
+                      'SHARE PRICE=$' WS-SHARE-PRICE '$ '
+                      'FUND=$' WS-MUTUAL-FUND-NAME '$ '
+                      'COM1=$' WS-COM1 '$ '
+                      'COM2=$' WS-COM2 '$ '
+                      'COM3=$' WS-COM3 '$'
+           END-READ.
+
+
+       220-PREPARE-HEADER.
+
+      *    GET TODAY'S DATE
+           MOVE FUNCTION CURRENT-DATE TO WS-CURRENT-DATE.
+           MOVE CORRESPONDING WS-CURRENT-DATE TO WS-HEADER-DATE.
+
+      *    CHANGE HOUR TO AM/PM
+           MOVE CURRENT-TIME(1:2) TO WS-HEADER-HOUR
+           IF WS-HEADER-HOUR = 0
+               MOVE 12 TO WS-HEADER-HOUR
+               MOVE 'AM' TO WS-HEADER-AM-PM
+           ELSE
+               IF WS-HEADER-HOUR < 12
+                   MOVE 'AM' TO WS-HEADER-AM-PM
+               ELSE
+                   MOVE 'PM' TO WS-HEADER-AM-PM
+                   IF WS-HEADER-HOUR > 12
+                       SUBTRACT 12 FROM WS-HEADER-HOUR
+                   END-IF
+               END-IF
+           END-IF
+
+           MOVE CURRENT-TIME(3:2) TO WS-HEADER-MINUTE.
+
+      *    PREPARE COUNTERS
+           COMPUTE WS-LINE-COUNT = 0.
+           COMPUTE WS-PAGE-COUNT = 0.
+
+      *    SAVE MUTUAL FUND NAME TO HEADER
+           MOVE SPACES TO WS-HEADER-INNER-SPACE
+
+           MOVE FUNCTION TRIM(WS-MUTUAL-FUND-NAME)
+               TO WS-COMPANY-NAME-TRIMMED
+
+           COMPUTE WS-COMPANY-LENGTH =
+               FUNCTION LENGTH(
+                   FUNCTION TRIM(WS-MUTUAL-FUND-NAME))
+
+           COMPUTE WS-COMPANY-START =
+               ((109 - WS-COMPANY-LENGTH) / 2) + 1
+
+           MOVE WS-COMPANY-NAME-TRIMMED(1:WS-COMPANY-LENGTH)
+               TO WS-HEADER-INNER-SPACE
+                  (WS-COMPANY-START:WS-COMPANY-LENGTH).
+
+      *    SAVE SHARE PRICE TO HEADER
+           MOVE WS-SHARE-PRICE
+               TO WS-SHARE-PRICE-FORMAT.
+           MOVE WS-SHARE-PRICE-FORMAT
+               TO WS-HEADER-SHARE-PRICE.
+
+       230-WRITE-PAGE-HEADER.
+
+           COMPUTE  WS-PAGE-COUNT = WS-PAGE-COUNT + 1.
+           MOVE WS-PAGE-COUNT TO WS-HEADER-PAGE-NUM.
+
+           WRITE REPORT-RECORD FROM WS-PAGE-HEADER-1.
+           WRITE REPORT-RECORD FROM WS-PAGE-HEADER-2.
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW.
+           WRITE REPORT-RECORD FROM WS-PAGE-HEADER-3.
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW.
+
+           IF NOT REPORT-FILE-OK
+               DISPLAY 'FATAL: REPORT FILE WRITE ERROR: '
+                   WS-REPORT-FILE-STATUS
+               STOP RUN
+           END-IF.
+
+
+       240-WRITE-COLUMN-HEADERS.
+
+           WRITE REPORT-RECORD FROM WS-COLUMN-HEADER.
+           WRITE REPORT-RECORD FROM WS-COLUMN-UNDERLINE.
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW.
+
+           IF NOT REPORT-FILE-OK
+               DISPLAY 'FATAL: REPORT FILE WRITE ERROR: '
+                   WS-REPORT-FILE-STATUS
+               STOP RUN
+           END-IF.
+
+
+
+      **********************************************************************
+
+       250-PROCESS-SALES-RECORD.
+
+      **  PRINT HEADER IF NEEDED **
+           IF WS-LINE-COUNT = 0 THEN
+              PERFORM 230-WRITE-PAGE-HEADER
+              PERFORM 240-WRITE-COLUMN-HEADERS
+           END-IF.
+
+      ** LOG RECORD **
+           MOVE IN-DEP-AMT TO WS-FORMAT.
+           DISPLAY
+              'BRANCH=$' IN-BRANCH-NME '$ '
+              'BROKER=$' IN-BROKER-NME '$ '
+              'AMOUNT=$' WS-FORMAT     '$ '
+              'FLAG=$' IN-COMMISSION-FLAG '$'.
+      ** CLEAR
+
+           MOVE SPACES TO REPORT-RECORD.
+
+      ** COMPUTE SHARE QTY AND COMMISSION **
+
+           MOVE ZERO TO WS-SHR-AMT.
+           MOVE ZERO TO WS-COMM-AMT.
+
+           COMPUTE WS-SHR-AMT = IN-DEP-AMT / WS-SHARE-PRICE.
+           MOVE WS-SHR-AMT TO WS-SHR-AMT-FORMAT.
+           MOVE WS-SHR-AMT-FORMAT TO OUT-SHR-AMT.
+
+           EVALUATE IN-COMMISSION-FLAG
+              WHEN 1
+                 COMPUTE WS-COMM-AMT = (IN-DEP-AMT * WS-COM1) / 100
+              WHEN 2
+                 COMPUTE WS-COMM-AMT = (IN-DEP-AMT * WS-COM2) / 100
+              WHEN 3
+                 COMPUTE WS-COMM-AMT = (IN-DEP-AMT * WS-COM3) / 100
+               WHEN OTHER
+                 COMPUTE WS-COMM-AMT = 0
+           END-EVALUATE.
+
+           MOVE WS-COMM-AMT TO WS-COMM-AMT-FORMAT.
+           MOVE WS-COMM-AMT-FORMAT TO OUT-COMM-AMT.
+
+      ** COMPUTE RUNNING SUMMARIES ***
+
+           COMPUTE WS-TOT-SALES    = WS-TOT-SALES + 1.
+           COMPUTE WS-TOT-DEP-AMT  = WS-TOT-DEP-AMT  + IN-DEP-AMT.
+           COMPUTE WS-TOT-COMM-AMT = WS-TOT-COMM-AMT + WS-COMM-AMT.
+
+      ** SAVE RECORD **
+
+           MOVE IN-BRANCH-NME TO OUT-BRANCH-NME.
+           MOVE IN-BROKER-NME TO OUT-BROKER-NME.
+           MOVE IN-DEP-AMT    TO WS-FORMAT.
+           MOVE WS-FORMAT TO OUT-DEP-AMT.
+
+           WRITE REPORT-RECORD.
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW.
+
+           IF NOT REPORT-FILE-OK
+               DISPLAY 'FATAL: REPORT FILE WRITE ERROR: '
+                   WS-REPORT-FILE-STATUS
+               STOP RUN
+           END-IF.
+
+      ** COMPUTE PAGINATION **
+           COMPUTE WS-LINE-COUNT = WS-LINE-COUNT + 2.
+           IF WS-LINE-COUNT >= 36
+              COMPUTE WS-LINE-COUNT = 0
+           END-IF.
+
+      ** DONE.
+
+
+       300-PROCESS-REPORT-SUMMARY.
+
+           PERFORM 230-WRITE-PAGE-HEADER
+
+           MOVE SPACES TO WS-TOTALS-RECORD
+
+           MOVE WS-TOT-SALES TO WS-TOT-SALES-FORMAT.
+           MOVE WS-TOT-SALES-FORMAT TO OUT-NUMBER-OF-SALES.
+
+           MOVE WS-TOT-DEP-AMT TO WS-TOT-DEP-AMT-FORMAT.
+           MOVE WS-TOT-DEP-AMT-FORMAT TO OUT-TOT-DEP-AMT.
+
+           COMPUTE WS-TOT-SHR-AMT = WS-TOT-DEP-AMT / WS-SHARE-PRICE.
+           MOVE WS-TOT-SHR-AMT TO WS-TOT-SHR-AMT-FORMAT.
+           MOVE WS-TOT-SHR-AMT-FORMAT TO OUT-TOT-SHR-AMT.
+
+           MOVE WS-TOT-COMM-AMT TO WS-TOT-COMM-AMT-FORMAT.
+           MOVE WS-TOT-COMM-AMT-FORMAT TO OUT-TOT-COMM-AMT.
+
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW
+           WRITE REPORT-RECORD FROM WS-TOTALS-HEADER
+           WRITE REPORT-RECORD FROM WS-TOTALS-UNDERLINE
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW
+           WRITE REPORT-RECORD FROM WS-TOTALS-RECORD.
+
+
+       400-CLOSE-SALE-FILE.
+
+           DISPLAY 'CLOSING SALES FILE...'.
+
+           CLOSE SALE-FILE.
+
+           IF NOT SALE-FILE-OK
+               DISPLAY 'FATAL: SALE FILE CLOSE ERROR: '
+                   WS-SALE-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
+       410-CLOSE-REPORT-FILE.
+
+           DISPLAY 'CLOSING REPORT FILE...'.
+
+           CLOSE REPORT-FILE.
+
+           IF NOT REPORT-FILE-OK
+               DISPLAY 'FATAL: REPORT FILE CLOSE ERROR '
+                   WS-REPORT-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+       420-CLOSE-TEMP-FILE.
+
+           DISPLAY 'CLOSING TEMP FILE...'.
+
+           CLOSE TEMP-SALES-FILE.
+
+           IF NOT TEMP-FILE-OK
+               DISPLAY 'FATAL: TEMP FILE CLOSE ERROR '
+                   WS-TEMP-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+       END PROGRAM SALESRPT.
