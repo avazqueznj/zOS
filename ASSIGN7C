@@ -525,6 +525,23 @@
            COMPUTE WS-TOT-DEP-AMT  = WS-TOT-DEP-AMT  + IN-DEP-AMT.
            COMPUTE WS-TOT-COMM-AMT = WS-TOT-COMM-AMT + WS-COMM-AMT.
 
+      ** SAVE TEMP HIGH SHR QTY RECORD FOR
+      **   BROKERS WHERE SHR QTY  > 150,000.
+
+           IF WS-SHR-AMT > 150000
+
+               MOVE IN-BROKER-NME TO TEMP-BROKER-NAME
+               MOVE WS-SHR-AMT    TO TEMP-SHARE-AMOUNT
+               WRITE TEMP-SALES-RECORD
+
+               IF NOT TEMP-FILE-OK
+                  DISPLAY 'FATAL: TEMP FILE WRITE ERROR: '
+                      WS-TEMP-FILE-STATUS
+                  STOP RUN
+               END-IF
+
+           END-IF.
+
       ** SAVE RECORD **
 
            MOVE IN-BRANCH-NME TO OUT-BRANCH-NME.
