@@ -1,0 +1,156 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.    SALESRPT.
+       AUTHOR.        A. VAZQUEZ.
+       DATE-WRITTEN.  08/1/2026.
+
+      ****************************************************************
+      *                                                              *
+      *  PROGRAM NAME:      SALESRPT.                                *
+      *                                                              *
+      *  PURPOSE:                                                    *
+      *                                                              *
+      *                                                              *
+      *  INPUT:                                                      *
+      *                                                              *
+      *  OUTPUT:                                                     *
+      *                                                              *
+      *  ENTRY CONDITION:                                            *
+      *                                                              *
+      *                                                              *
+      *  EXIT CONDITION:                                             *
+      *                                                              *
+      *  NOTES:                                                      *
+      *                                                              *
+      *                                                              *
+      ****************************************************************
+
+
+      ****************************************************************
+       ENVIRONMENT DIVISION.
+
+       INPUT-OUTPUT SECTION.
+
+       FILE-CONTROL.
+
+           SELECT FUND-FILE
+               ASSIGN TO FUNDFILE
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-FUND-FILE-STATUS.
+
+           SELECT PRICE-FILE
+               ASSIGN TO PRICEFILE
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-PRICE-FILE-STATUS.
+
+           SELECT SALES-FILE
+               ASSIGN TO SALESFILE
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-SALES-FILE-STATUS.
+
+           SELECT HIGH-SALES-FILE
+               ASSIGN TO HIGHSLS
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-HIGH-SALES-FILE-STATUS.
+
+           SELECT REPORT-FILE
+               ASSIGN TO REPORTFL
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-REPORT-FILE-STATUS.
+
+
+      ****************************************************************
+       DATA DIVISION.
+       FILE SECTION.
+
+       FD  FUND-FILE
+           RECORDING MODE IS F
+           RECORD CONTAINS 80 CHARACTERS.
+
+           COPY FUNDREC.
+
+           05  FILLER                    PIC X(46).
+
+       FD  PRICE-FILE
+           RECORDING MODE IS F
+           RECORD CONTAINS 80 CHARACTERS.
+
+           COPY PRCREC.
+
+       FD  SALES-FILE
+           RECORDING MODE IS F
+           RECORD CONTAINS 102 CHARACTERS.
+
+           COPY SALESREC.
+
+       FD  HIGH-SALES-FILE
+           RECORDING MODE IS F
+           RECORD CONTAINS 34 CHARACTERS.
+
+           COPY HSREC.
+
+       FD  REPORT-FILE
+           RECORDING MODE IS F
+           RECORD CONTAINS 132 CHARACTERS.
+
+       01  REPORT-RECORD                 PIC X(132).
+
+
+       WORKING-STORAGE SECTION.
+
+      ****************************************************************
+      *  FILE STATUS FIELDS                                          *
+      ****************************************************************
+       01  WS-FUND-FILE-STATUS           PIC XX VALUE SPACES.
+           88  FUND-FILE-OK              VALUE '00'.
+           88  FUND-FILE-AT-END          VALUE '10'.
+
+       01  WS-PRICE-FILE-STATUS          PIC XX VALUE SPACES.
+           88  PRICE-FILE-OK             VALUE '00'.
+           88  PRICE-FILE-AT-END         VALUE '10'.
+
+       01  WS-SALES-FILE-STATUS          PIC XX VALUE SPACES.
+           88  SALES-FILE-OK             VALUE '00'.
+           88  SALES-FILE-AT-END         VALUE '10'.
+
+       01  WS-HIGH-SALES-FILE-STATUS     PIC XX VALUE SPACES.
+           88  HIGH-SALES-FILE-OK        VALUE '00'.
+           88  HIGH-SALES-FILE-AT-END    VALUE '10'.
+
+       01  WS-REPORT-FILE-STATUS         PIC XX VALUE SPACES.
+           88  REPORT-FILE-OK            VALUE '00'.
+
+      ****************************************************************
+      *  FUND TABLE                                                   *
+      ****************************************************************
+       01  WS-FUND-COUNT                 PIC S9(4) BINARY SYNC
+                                         VALUE ZERO.
+
+       01  WS-FUND-TABLE.
+           05  TBL-FUND-ENTRY
+               OCCURS 1 TO 199 TIMES
+               DEPENDING ON WS-FUND-COUNT
+               ASCENDING KEY IS TBL-FUND-NBR
+               INDEXED BY TBL-FUND-NDX.
+
+               COPY FUNDTBL.
+
+
+       LOCAL-STORAGE SECTION.
+
+
+      ****************************************************************
+       PROCEDURE DIVISION.
+
+       000-MAIN.
+
+
+           STOP RUN.
+
+
+       END PROGRAM SALESRPT.
+

@@ -1,0 +1,4 @@
+           SORT SORT-WORK-FILE                                          00010000
+             ON DESCENDING KEY SORT-WORK-DEP-AMT                        00020000
+                 USING SALE-FILE                                        00030000
+                 GIVING SORTED-SALE-FILE.                               00040000

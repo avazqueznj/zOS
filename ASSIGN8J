@@ -1,0 +1,127 @@
+//EMMA101A JOB 1,'A VAZQUEZ',MSGCLASS=H,NOTIFY=&SYSUID
+//*
+//***************************************************************
+//*                                                             *
+//*  COBOL              ASSIGNMENT 8                            *
+//*                                                             *
+//***************************************************************
+//*
+//*********************************************************************
+//* SORT FUNDS BY FUND NUMBER ASC
+//*********************************************************************
+//* DELETE ANY PREVIOUS OUTPUT
+//DELREPT  EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  DELETE EMMA101.COBOL.SALESRPT PURGE
+  SET MAXCC = 0
+/*
+//*
+//*********************************************************************
+//* SORT FUNDS BY FUND NUMBER ASC
+//*********************************************************************
+//** COMPARE LOGICAL CHARACTERS
+//SRTFUND  EXEC PGM=SORT,PARM='CMP=CLC'
+//*
+//SORTIN   DD DSN=EMMA.COBOL.ASNDATA(FUNDS),DISP=SHR
+//*
+//SORTOUT  DD DSN=&&SORTED,
+//            DISP=(NEW,PASS,DELETE),
+//            UNIT=SYSDA,
+//            SPACE=(TRK,(1,1)),
+//            DCB=(RECFM=FB,LRECL=80,BLKSIZE=0)
+//*
+//SYSOUT   DD SYSOUT=*
+//*
+//**  1-3 ZONED DECIMAL ASC **
+//SYSIN    DD *
+  SORT FIELDS=(1,3,ZD,A)
+/*
+//*
+//*********************************************************************
+//* COMPILE
+//*********************************************************************
+//COMPILE  EXEC PGM=IGYCRCTL,REGION=0M
+//*
+//STEPLIB  DD DSN=IGY.SIGYCOMP,DISP=SHR
+//         DD DSN=CEE.SCEERUN,DISP=SHR
+//         DD DSN=CEE.SCEERUN2,DISP=SHR
+//*
+//SYSIN    DD DSN=EMMA101.COBOL.ASSIGNS(ASSIGN8C),DISP=SHR
+//*
+//SYSLIB   DD DSN=EMMA.COBOL.COPYLIB,DISP=SHR
+//*
+//SYSLIN   DD DSN=&&OBJMOD,SPACE=(CYL,(1,1)),DISP=(MOD,PASS)
+//*
+//SYSPRINT DD SYSOUT=*
+//*
+//SYSUT1   DD SPACE=(CYL,(1,1))
+//SYSUT2   DD SPACE=(CYL,(1,1))
+//SYSUT3   DD SPACE=(CYL,(1,1))
+//SYSUT4   DD SPACE=(CYL,(1,1))
+//SYSUT5   DD SPACE=(CYL,(1,1))
+//SYSUT6   DD SPACE=(CYL,(1,1))
+//SYSUT7   DD SPACE=(CYL,(1,1))
+//SYSUT8   DD SPACE=(CYL,(1,1))
+//SYSUT9   DD SPACE=(CYL,(1,1))
+//SYSUT10  DD SPACE=(CYL,(1,1))
+//SYSUT11  DD SPACE=(CYL,(1,1))
+//SYSUT12  DD SPACE=(CYL,(1,1))
+//SYSUT13  DD SPACE=(CYL,(1,1))
+//SYSUT14  DD SPACE=(CYL,(1,1))
+//SYSUT15  DD SPACE=(CYL,(1,1))
+//SYSMDECK DD SPACE=(CYL,(1,1))
+//*
+//*
+//*********************************************************************
+//* LINK
+//*********************************************************************
+//LINK  EXEC PGM=IEWBLINK,COND=(4,LT)
+//*
+//SYSLIB   DD DSN=CEE.SCEELKEX,DISP=SHR
+//         DD DSN=CEE.SCEELKED,DISP=SHR
+//*
+//SYSLIN   DD DSN=&&OBJMOD,DISP=(OLD,DELETE,DELETE)
+//*
+//SYSLMOD  DD DSN=EMMA101.COBOL.LOADLIB(SALESRPT),
+//            SPACE=(1024,(50,20,1)),
+//            DSNTYPE=LIBRARY,
+//            DISP=(MOD,CATLG,KEEP)
+//*
+//SYSPRINT DD SYSOUT=*
+//*
+//*
+//*********************************************************************
+//* RUN
+//*********************************************************************
+//RUN  EXEC PGM=SALESRPT,COND=(4,LT)
+//*
+//* ADDED EMMA.COBOL.LOADLIB FOR JOBNAME PRGRAM
+//STEPLIB  DD DSN=EMMA101.COBOL.LOADLIB,DISP=SHR
+//         DD DSN=EMMA.COBOL.LOADLIB,DISP=SHR
+//*
+//FUNDFILE DD DSN=&&SORTED,DISP=(OLD,DELETE)
+//*
+//PRICEFILE DD DSN=EMMA.COBOL.ASNDATA(PRICES),DISP=SHR
+//*
+//SALESFILE DD DSN=EMMA.COBOL.DATA8(SALES),DISP=SHR
+//*
+//HIGHSLS  DD DSN=&&HIGHSLS,
+//            DISP=(NEW,DELETE,DELETE),
+//            UNIT=SYSDA,
+//            SPACE=(TRK,(1,1)),
+//            DCB=(RECFM=FB,LRECL=34,BLKSIZE=0)
+//*
+//* OUTPUT FILE
+//REPORTFL DD DSN=EMMA101.COBOL.SALESRPT,
+//            DISP=(NEW,CATLG,DELETE),
+//            UNIT=SYSDA,
+//            SPACE=(TRK,(1,1)),
+//            DCB=(RECFM=FB,LRECL=132,BLKSIZE=0)
+//*
+//SYSOUT   DD SYSOUT=*
+//*
+//SYSLOUT  DD SYSOUT=*
+//*
+//SYSUDUMP DD SYSOUT=*
+//

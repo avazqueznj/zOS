@@ -1,0 +1,6 @@
+               10  TBL-FUND-NBR        PIC S9(3)      PACKED-DECIMAL.   00010001
+               10  TBL-FUND-NME        PIC X(25).                       00020000
+               10  TBL-FUND-COMM-PCT   PIC S9(3)V9(3) PACKED-DECIMAL.   00030001
+               10  TBL-FUND-SHR-PRC    OCCURS 3                         00040000
+                                       INDEXED BY TBL-PRC-NDX           00050000
+                                       PIC S9(3)V99   PACKED-DECIMAL.   00060001
