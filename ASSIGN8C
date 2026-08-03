@@ -189,6 +189,71 @@
                                        PIC S9(3)V99   PACKED-DECIMAL.
 
 
+      ****************************************************************
+      *                       SALES REPORT                           *
+      ****************************************************************
+
+      ** REPORT STATE **
+       01  WS-LINE-COUNT    PIC S9(4) BINARY         VALUE ZERO.
+       01  WS-PAGE-COUNT    PIC 9(4)  PACKED-DECIMAL VALUE ZERO.
+       01  WS-BLANK-ROW               PIC X(132)     VALUE SPACES.
+
+      *  HEADING LINE 1
+       01 WS-COLUMN-HEADER-1.
+          05 FILLER PIC X(82) VALUE SPACES.
+          05 FILLER PIC X(14) VALUE '       DEPOSIT'.
+          05 FILLER PIC X(22) VALUE SPACES.
+          05 FILLER PIC X(14) VALUE '    COMMISSION'.
+
+      *  HEADING LINE 2
+       01 WS-COLUMN-HEADER-2.
+          05 FILLER PIC X(21) VALUE 'BRANCH NAME'.
+          05 FILLER PIC X(2)  VALUE SPACES.
+          05 FILLER PIC X(25) VALUE 'BROKER NAME'.
+          05 FILLER PIC X     VALUE SPACE.
+          05 FILLER PIC X(4)  VALUE 'FUND'.
+          05 FILLER PIC X(2)  VALUE SPACES.
+          05 FILLER PIC X(25) VALUE 'FUND NAME'.
+          05 FILLER PIC X(2)  VALUE SPACES.
+          05 FILLER PIC X(14) VALUE '        AMOUNT'.
+          05 FILLER PIC X(4)  VALUE SPACES.
+          05 FILLER PIC X(16) VALUE '     SHARES SOLD'.
+          05 FILLER PIC X(2)  VALUE SPACES.
+          05 FILLER PIC X(14) VALUE '        AMOUNT'.
+
+      *  COLUMN HYPHEN LINE                                          *
+       01  WS-COLUMN-HYPHENS.
+           05 FILLER PIC X(21) VALUE '---------------------'.
+           05 FILLER PIC X(2)  VALUE SPACES.
+           05 FILLER PIC X(25) VALUE '-------------------------'.
+           05 FILLER PIC X     VALUE SPACE.
+           05 FILLER PIC X(4)  VALUE '----'.
+           05 FILLER PIC X(2)  VALUE SPACES.
+           05 FILLER PIC X(25) VALUE '-------------------------'.
+           05 FILLER PIC X     VALUE SPACE.
+           05 FILLER PIC X(15) VALUE '---------------'.
+           05 FILLER PIC X(2)  VALUE SPACES.
+           05 FILLER PIC X(18) VALUE '------------------'.
+           05 FILLER PIC X     VALUE SPACE.
+           05 FILLER PIC X(15) VALUE '---------------'.
+
+      *  REPORT DETAIL LINE                                          *
+       01 WS-DETAIL-LINE.
+          05 WS-DTL-BRANCH-NME         PIC X(21).
+          05 FILLER                    PIC X(2).
+          05 WS-DTL-BROKER-NME         PIC X(25).
+          05 FILLER                    PIC X.
+          05 WS-DTL-FUND-NBR           PIC ZZZ9.
+          05 FILLER                    PIC X(2).
+          05 WS-DTL-FUND-NME           PIC X(25).
+          05 FILLER                    PIC X(2).
+          05 WS-DTL-DEP-AMT            PIC $$$,$$$,$$9.99.
+          05 FILLER                    PIC X(4).
+          05 WS-DTL-SHARE-AMT          PIC ZZZ,ZZZ,ZZ9.9999.
+          05 FILLER                    PIC X(2).
+          05 WS-DTL-COMMISSION-AMT     PIC $$$,$$$,$$9.99.
+
+
        LOCAL-STORAGE SECTION.
 
 
@@ -203,6 +268,7 @@
            PERFORM 100-OPEN-FUNDS-FILE.
            PERFORM 110-OPEN-PRICES-FILE.
            PERFORM 120-OPEN-SALES-FILE.
+           PERFORM 130-OPEN-REPORT-FILE.
 
       *    BUILD FUND/FUND PRICE TABLE
            PERFORM 300-PROCESS-FUND-PRICE-TABLE.
@@ -243,6 +309,18 @@
            IF NOT SALES-FILE-OK
               DISPLAY 'FATAL: SALE-FILE OPEN ERROR '
                    WS-SALES-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
+       130-OPEN-REPORT-FILE.
+
+           DISPLAY 'OPENING REPORT FILE...'.
+
+           OPEN OUTPUT REPORT-FILE.
+           IF NOT REPORT-FILE-OK
+              DISPLAY 'FATAL: REPORT-FILE OPEN ERROR '
+                   WS-REPORT-FILE-STATUS
               STOP RUN
            END-IF.
 
@@ -329,33 +407,82 @@
 
        330-PROCESS-SALES-RECORD.
 
-           DISPLAY 'SALE ' SALE-BRANCH-NME '-' SALE-BROKER-NME
-
            PERFORM VARYING I FROM 1 BY 1
-               UNTIL I > 4
-               OR SALE-FUND-NBR(I) = ZERO
+              UNTIL I > 4 OR SALE-FUND-NBR(I) = ZERO
 
-               SEARCH ALL TBL-FUND-ENTRY
+      *       PRINT HEADERS IF NECESSARY
+              IF WS-LINE-COUNT = 0 THEN
+                 PERFORM 400-PRINT-COLUMN-HEADINGS
+              END-IF
 
-                   AT END
-                       DISPLAY
-                          '    *' I ' *** FUND NOT FOUND *** ->'
-                          SALE-FUND-NBR(I)
+      *       BRANCH AND BORKER ON FIRST SALE
+              IF I = 1 THEN
+                 MOVE SALE-BRANCH-NME TO WS-DTL-BRANCH-NME
+                 MOVE SALE-BROKER-NME TO WS-DTL-BROKER-NME
+                 DISPLAY SALE-BRANCH-NME '-' SALE-BROKER-NME
+              ELSE
+                 MOVE SPACES TO WS-DTL-BRANCH-NME
+                 MOVE SPACES TO WS-DTL-BROKER-NME
+              END-IF
 
-                   WHEN TBL-FUND-NBR(TBL-FUND-NDX) =
-                          SALE-FUND-NBR(I)
+      *       RESET
+              MOVE ZERO TO WS-DTL-SHARE-AMT
+              MOVE ZERO TO WS-DTL-COMMISSION-AMT
 
-                       DISPLAY
-                           '    *' I '  ' SALE-FUND-NBR(I)
-                           '=' TBL-FUND-NBR(TBL-FUND-NDX)
-                           ' ' TBL-FUND-NME(TBL-FUND-NDX)
-                           ' ' SALE-SHR-PRC-FLG(I)
-                           ' ' SALE-DEP-AMT(I)
+      *       FIND THE FUND OF THIS SALE
+              SEARCH ALL TBL-FUND-ENTRY
+
+      *          NOT FOUND <<>>
+                 AT END
+
+                    MOVE SALE-FUND-NBR(I) TO WS-DTL-FUND-NBR
+                    MOVE '**** FUND NOT FOUND *****' TO WS-DTL-FUND-NME
+                    MOVE SALE-DEP-AMT(I) TO WS-DTL-DEP-AMT
+                    MOVE ZERO TO WS-DTL-SHARE-AMT
+                    MOVE ZERO TO WS-DTL-COMMISSION-AMT
+
+                    DISPLAY
+                      '    *' I ' *** FUND NOT FOUND *** ->'
+                      SALE-FUND-NBR(I)
+
+      *          FUND FOUND  >><<
+                 WHEN TBL-FUND-NBR(TBL-FUND-NDX) = SALE-FUND-NBR(I)
+
+      *             DEBUG REMOVE LATER ...
+                    DISPLAY
+                        '    *' I '  ' SALE-FUND-NBR(I)
+                        '=' TBL-FUND-NBR(TBL-FUND-NDX)
+                        ' ' TBL-FUND-NME(TBL-FUND-NDX)
+                        ' ' SALE-SHR-PRC-FLG(I)
+                        ' ' SALE-DEP-AMT(I)
+
+                    MOVE TBL-FUND-NBR(TBL-FUND-NDX) TO WS-DTL-FUND-NBR
+                    MOVE TBL-FUND-NME(TBL-FUND-NDX) TO WS-DTL-FUND-NME
+                    MOVE SALE-DEP-AMT(I) TO WS-DTL-DEP-AMT
 
                END-SEARCH
 
-           END-PERFORM.
+               WRITE REPORT-RECORD FROM WS-DETAIL-LINE
+               WRITE REPORT-RECORD FROM WS-BLANK-ROW
 
+      *        PAGINATION
+               COMPUTE WS-LINE-COUNT =  WS-LINE-COUNT + 2
+               IF WS-LINE-COUNT >= 18 THEN
+                 MOVE ZERO TO WS-LINE-COUNT
+               END-IF
+
+           END-PERFORM.
+      *    END LOOP
+
+
+       400-PRINT-COLUMN-HEADINGS.
+
+           WRITE REPORT-RECORD FROM WS-COLUMN-HEADER-1
+           WRITE REPORT-RECORD FROM WS-COLUMN-HEADER-2
+           WRITE REPORT-RECORD FROM WS-COLUMN-HYPHENS
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW.
+
+           COMPUTE WS-LINE-COUNT =  WS-LINE-COUNT + 4.
 
        END PROGRAM SALESRPT.
 
