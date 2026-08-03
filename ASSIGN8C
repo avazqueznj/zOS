@@ -135,6 +135,9 @@
       *  FILE STATUS FIELDS                                          *
       ****************************************************************
 
+      * GENERAL FOR INDEX
+       01  I                             PIC S9(4) BINARY VALUE ZERO.
+
        01  WS-END-OF-FILE                PIC X VALUE 'N'.
       *                                  FIRST VALUE IS USED FOE TRUE
            88 END-OF-FILE                VALUE 'Y'.
@@ -199,9 +202,11 @@
       *    OPEN FILES
            PERFORM 100-OPEN-FUNDS-FILE.
            PERFORM 110-OPEN-PRICES-FILE.
+           PERFORM 120-OPEN-SALES-FILE.
 
       *    BUILD FUND/FUND PRICE TABLE
            PERFORM 300-PROCESS-FUND-PRICE-TABLE.
+           PERFORM 320-PROCESS-SALES-TABLE.
 
            STOP RUN.
 
@@ -230,12 +235,25 @@
            END-IF.
 
 
+       120-OPEN-SALES-FILE.
+
+           DISPLAY 'OPENING SALES FILE...'.
+
+           OPEN INPUT SALES-FILE .
+           IF NOT SALES-FILE-OK
+              DISPLAY 'FATAL: SALE-FILE OPEN ERROR '
+                   WS-SALES-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
        300-PROCESS-FUND-PRICE-TABLE.
 
            DISPLAY "BUILDING FUND-PRICE TABLE ".
 
            MOVE 0 TO WS-FUND-COUNT.
 
+           MOVE 'N' TO WS-END-OF-FILE.
            PERFORM UNTIL END-OF-FILE
               READ FUND-FILE
                   AT END
@@ -279,7 +297,8 @@
                TO TBL-FUND-SHR-PRC(TBL-FUND-NDX, 2)
              MOVE IN-FUND-SHR-PRC(3)
                TO TBL-FUND-SHR-PRC(TBL-FUND-NDX, 3)
-             END-READ.
+
+           END-READ.
 
       *      CHECK
              DISPLAY WS-FUND-COUNT
@@ -289,6 +308,54 @@
              '-' TBL-FUND-SHR-PRC(TBL-FUND-NDX, 1)
              '-' TBL-FUND-SHR-PRC(TBL-FUND-NDX, 2)
              '-' TBL-FUND-SHR-PRC(TBL-FUND-NDX, 3).
+
+
+       320-PROCESS-SALES-TABLE.
+
+           DISPLAY "PROCESSING SALES".
+
+           MOVE 'N' TO WS-END-OF-FILE.
+           PERFORM UNTIL END-OF-FILE
+              READ SALES-FILE
+                  AT END
+                      SET END-OF-FILE TO TRUE
+                  NOT AT END
+
+                  PERFORM 330-PROCESS-SALES-RECORD
+
+              END-READ
+           END-PERFORM.
+
+
+       330-PROCESS-SALES-RECORD.
+
+           DISPLAY 'SALE ' SALE-BRANCH-NME '-' SALE-BROKER-NME
+
+           PERFORM VARYING I FROM 1 BY 1
+               UNTIL I > 4
+               OR SALE-FUND-NBR(I) = ZERO
+
+               SEARCH ALL TBL-FUND-ENTRY
+
+                   AT END
+                       DISPLAY
+                          '    *' I ' *** FUND NOT FOUND *** ->'
+                          SALE-FUND-NBR(I)
+
+                   WHEN TBL-FUND-NBR(TBL-FUND-NDX) =
+                          SALE-FUND-NBR(I)
+
+                       DISPLAY
+                           '    *' I '  ' SALE-FUND-NBR(I)
+                           '=' TBL-FUND-NBR(TBL-FUND-NDX)
+                           ' ' TBL-FUND-NME(TBL-FUND-NDX)
+                           ' ' SALE-SHR-PRC-FLG(I)
+                           ' ' SALE-DEP-AMT(I)
+
+               END-SEARCH
+
+           END-PERFORM.
+
 
        END PROGRAM SALESRPT.
 
