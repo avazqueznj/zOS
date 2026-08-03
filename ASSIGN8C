@@ -71,27 +71,56 @@
            RECORDING MODE IS F
            RECORD CONTAINS 80 CHARACTERS.
 
-           COPY FUNDREC.
+      *     COPY FUNDREC.
+       01  FUND-RECORD.
+           05  IN-FUND-NBR        PIC S9(3).
+           05  IN-FUND-NME        PIC X(25).
+           05  IN-FUND-COMM-PCT   PIC S9(3)V9(3).
 
-           05  FILLER                    PIC X(46).
+           05  FILLER             PIC X(46).
+
+
 
        FD  PRICE-FILE
            RECORDING MODE IS F
            RECORD CONTAINS 80 CHARACTERS.
 
-           COPY PRCREC.
+      *     COPY PRCREC.
+       01  PRICE-RECORD.
+           05  IN-FUND-SHR-PRC    OCCURS 3
+                                  PIC S9(3)V99.
+           05                     PIC X(65).
+
+
 
        FD  SALES-FILE
            RECORDING MODE IS F
            RECORD CONTAINS 102 CHARACTERS.
 
-           COPY SALESREC.
+      *     COPY SALESREC.
+       01  SALES-RECORD.
+           05  SALE-BRANCH-NME          PIC X(20).
+           05  SALE-BROKER-NME          PIC X(25).
+           05  SALE-DETAIL              OCCURS 4
+                                        INDEXED BY SALE-NDX.
+               10  SALE-FUND-NBR        PIC S9(3).
+               10  SALE-SHR-PRC-FLG     PIC S9.
+               10  SALE-DEP-AMT         PIC S9(8)V99.
+           05                           PIC X.
+
+
 
        FD  HIGH-SALES-FILE
            RECORDING MODE IS F
            RECORD CONTAINS 34 CHARACTERS.
 
-           COPY HSREC.
+      *   COPY HSREC.
+       01  HIGH-SALES-RECORD.
+           05  HS-BROKER-NME         PIC X(25).
+           05  HS-FUND-NBR           PIC S9(3)       PACKED-DECIMAL.
+           05  HS-SHR-AMT            PIC S9(10)V9(3) PACKED-DECIMAL.
+
+
 
        FD  REPORT-FILE
            RECORDING MODE IS F
@@ -105,6 +134,12 @@
       ****************************************************************
       *  FILE STATUS FIELDS                                          *
       ****************************************************************
+
+       01  WS-END-OF-FILE                PIC X VALUE 'N'.
+      *                                  FIRST VALUE IS USED FOE TRUE
+           88 END-OF-FILE                VALUE 'Y'.
+           88 NOT-END-OF-FILE            VALUE 'N'.
+
        01  WS-FUND-FILE-STATUS           PIC XX VALUE SPACES.
            88  FUND-FILE-OK              VALUE '00'.
            88  FUND-FILE-AT-END          VALUE '10'.
@@ -132,12 +167,23 @@
 
        01  WS-FUND-TABLE.
            05  TBL-FUND-ENTRY
+      *          initial buffer
                OCCURS 1 TO 199 TIMES
+      *          WS-FUND-COUNT so search knows how far to look at
                DEPENDING ON WS-FUND-COUNT
+      *          set the pk
                ASCENDING KEY IS TBL-FUND-NBR
+      *          set curson name
                INDEXED BY TBL-FUND-NDX.
 
-               COPY FUNDTBL.
+      *         COPY FUNDTBL.
+               10  TBL-FUND-NBR        PIC S9(3)      PACKED-DECIMAL.
+               10  TBL-FUND-NME        PIC X(25).
+               10  TBL-FUND-COMM-PCT   PIC S9(3)V9(3) PACKED-DECIMAL.
+               10  TBL-FUND-SHR-PRC    OCCURS 3
+      *                                fixed to 3 no depends, cursor on
+                                       INDEXED BY TBL-PRC-NDX
+                                       PIC S9(3)V99   PACKED-DECIMAL.
 
 
        LOCAL-STORAGE SECTION.
@@ -148,9 +194,102 @@
 
        000-MAIN.
 
+           DISPLAY 'SALESRPT 8 STARTING... V1'.
+
+      *    OPEN FILES
+           PERFORM 100-OPEN-FUNDS-FILE.
+           PERFORM 110-OPEN-PRICES-FILE.
+
+      *    BUILD FUND/FUND PRICE TABLE
+           PERFORM 300-PROCESS-FUND-PRICE-TABLE.
 
            STOP RUN.
 
 
+       100-OPEN-FUNDS-FILE.
+
+           DISPLAY 'OPENING FUNDS FILE...'.
+
+           OPEN INPUT FUND-FILE.
+           IF NOT FUND-FILE-OK
+              DISPLAY 'FATAL: FUND-FILE OPEN ERROR '
+                   WS-FUND-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
+       110-OPEN-PRICES-FILE.
+
+           DISPLAY 'OPENING PRICES FILE...'.
+
+           OPEN INPUT PRICE-FILE .
+           IF NOT PRICE-FILE-OK
+              DISPLAY 'FATAL: PRICE-FILE OPEN ERROR '
+                   WS-PRICE-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
+       300-PROCESS-FUND-PRICE-TABLE.
+
+           DISPLAY "BUILDING FUND-PRICE TABLE ".
+
+           MOVE 0 TO WS-FUND-COUNT.
+
+           PERFORM UNTIL END-OF-FILE
+              READ FUND-FILE
+                  AT END
+                      SET END-OF-FILE TO TRUE
+                  NOT AT END
+
+                  PERFORM 310-READ-FUND-PRICE-ROW
+
+              END-READ
+           END-PERFORM.
+
+
+       310-READ-FUND-PRICE-ROW.
+
+           DISPLAY IN-FUND-NBR '-' IN-FUND-NME '-' IN-FUND-COMM-PCT.
+
+      *    SAVE THE FUND TO THE TABLE
+           ADD 1 TO WS-FUND-COUNT.
+           SET TBL-FUND-NDX TO WS-FUND-COUNT.
+
+           MOVE IN-FUND-NBR TO
+               TBL-FUND-NBR(TBL-FUND-NDX).
+           MOVE IN-FUND-NME TO
+               TBL-FUND-NME(TBL-FUND-NDX).
+           MOVE IN-FUND-COMM-PCT TO
+               TBL-FUND-COMM-PCT(TBL-FUND-NDX).
+
+      *    SAVE THE FUND'S PRICES TO THE TABLE (PRE ORDERED)
+           READ PRICE-FILE
+             AT END
+                 DISPLAY
+                     'FATAL: PRICE FILE ENDED BEFORE FUND FILE'
+                 STOP RUN
+
+             NOT AT END
+
+      *      SAVE 3 PRICES
+             MOVE IN-FUND-SHR-PRC(1)
+               TO TBL-FUND-SHR-PRC(TBL-FUND-NDX, 1)
+             MOVE IN-FUND-SHR-PRC(2)
+               TO TBL-FUND-SHR-PRC(TBL-FUND-NDX, 2)
+             MOVE IN-FUND-SHR-PRC(3)
+               TO TBL-FUND-SHR-PRC(TBL-FUND-NDX, 3)
+             END-READ.
+
+      *      CHECK
+             DISPLAY WS-FUND-COUNT
+             ' ' TBL-FUND-NBR(TBL-FUND-NDX)
+             '-' TBL-FUND-NME(TBL-FUND-NDX)
+             '-' TBL-FUND-COMM-PCT(TBL-FUND-NDX)
+             '-' TBL-FUND-SHR-PRC(TBL-FUND-NDX, 1)
+             '-' TBL-FUND-SHR-PRC(TBL-FUND-NDX, 2)
+             '-' TBL-FUND-SHR-PRC(TBL-FUND-NDX, 3).
+
        END PROGRAM SALESRPT.
+
 
