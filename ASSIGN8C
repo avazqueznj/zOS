@@ -210,6 +210,9 @@
            05 CURRENT-HUNDREDTHS     PIC X(2).
            05 CURRENT-OFFSET         PIC X(5).
 
+       01 WS-JOBNAME-LIB             PIC X(8) VALUE 'JOBNAME'.
+       01 WS-JOBNAME                 PIC X(8) VALUE 'XXXXX'.
+
       *                 REPORT HEADER
 
        01 WS-PAGE-HEADER-1.
@@ -619,8 +622,13 @@
            MOVE FUNCTION CURRENT-DATE TO WS-CURRENT-DATE.
            MOVE CORRESPONDING WS-CURRENT-DATE TO WS-HEADER-DATE.
 
-      *    GET JOB NAME
-           ACCEPT WS-HEADER-JOB-NAME FROM JOB-NAME
+      *    GET JOB NAME  !! LINKER ERROR !! TBD DISCUSS W TEACHER
+      *    --> AMODE24 application without using runtime options
+
+      *    CALL WS-JOBNAME-LIB USING WS-JOBNAME
+           MOVE WS-JOBNAME TO WS-HEADER-JOB-NAME
+
+
 
       *    CHANGE HOUR TO AM/PM
            MOVE CURRENT-TIME(1:2) TO WS-HEADER-HOUR
