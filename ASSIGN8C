@@ -81,11 +81,11 @@
            RECORDING MODE IS F
            RECORD CONTAINS 80 CHARACTERS.
 
-      *     COPY FUNDREC.
-       01  FUND-RECORD.
-           05  IN-FUND-NBR        PIC S9(3).
-           05  IN-FUND-NME        PIC X(25).
-           05  IN-FUND-COMM-PCT   PIC S9(3)V9(3).
+           COPY FUNDREC.
+      *01  FUND-RECORD.
+      *    05  IN-FUND-NBR        PIC S9(3).
+      *    05  IN-FUND-NME        PIC X(25).
+      *    05  IN-FUND-COMM-PCT   PIC S9(3)V9(3).
 
            05  FILLER             PIC X(46).
 
@@ -95,11 +95,11 @@
            RECORDING MODE IS F
            RECORD CONTAINS 80 CHARACTERS.
 
-      *     COPY PRCREC.
-       01  PRICE-RECORD.
-           05  IN-FUND-SHR-PRC    OCCURS 3
-                                  PIC S9(3)V99.
-           05                     PIC X(65).
+           COPY PRCREC.
+      *01  PRICE-RECORD.
+      *    05  IN-FUND-SHR-PRC    OCCURS 3
+      *                           PIC S9(3)V99.
+      *    05                     PIC X(65).
 
 
 
@@ -107,16 +107,16 @@
            RECORDING MODE IS F
            RECORD CONTAINS 102 CHARACTERS.
 
-      *     COPY SALESREC.
-       01  SALES-RECORD.
-           05  SALE-BRANCH-NME          PIC X(20).
-           05  SALE-BROKER-NME          PIC X(25).
-           05  SALE-DETAIL              OCCURS 4
-                                        INDEXED BY SALE-NDX.
-               10  SALE-FUND-NBR        PIC S9(3).
-               10  SALE-SHR-PRC-FLG     PIC S9.
-               10  SALE-DEP-AMT         PIC S9(8)V99.
-           05                           PIC X.
+           COPY SALESREC.
+      *01  SALES-RECORD.
+      *    05  SALE-BRANCH-NME          PIC X(20).
+      *    05  SALE-BROKER-NME          PIC X(25).
+      *    05  SALE-DETAIL              OCCURS 4
+      *                                 INDEXED BY SALE-NDX.
+      *        10  SALE-FUND-NBR        PIC S9(3).
+      *        10  SALE-SHR-PRC-FLG     PIC S9.
+      *        10  SALE-DEP-AMT         PIC S9(8)V99.
+      *    05                           PIC X.
 
 
        FD  REPORT-FILE
@@ -613,13 +613,13 @@
            END-READ.
 
       *      CHECK
-             DISPLAY WS-FUND-COUNT
-             ' ' TBL-FUND-NBR(TBL-FUND-NDX)
-             '-' TBL-FUND-NME(TBL-FUND-NDX)
-             '-' TBL-FUND-COMM-PCT(TBL-FUND-NDX)
-             '-' TBL-FUND-SHR-PRC(TBL-FUND-NDX, 1)
-             '-' TBL-FUND-SHR-PRC(TBL-FUND-NDX, 2)
-             '-' TBL-FUND-SHR-PRC(TBL-FUND-NDX, 3).
+      *      DISPLAY WS-FUND-COUNT
+      *      ' ' TBL-FUND-NBR(TBL-FUND-NDX)
+      *      '-' TBL-FUND-NME(TBL-FUND-NDX)
+      *      '-' TBL-FUND-COMM-PCT(TBL-FUND-NDX)
+      *      '-' TBL-FUND-SHR-PRC(TBL-FUND-NDX, 1)
+      *      '-' TBL-FUND-SHR-PRC(TBL-FUND-NDX, 2)
+      *      '-' TBL-FUND-SHR-PRC(TBL-FUND-NDX, 3).
 
 
        320-PROCESS-SALES-TABLE.
