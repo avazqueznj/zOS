@@ -197,6 +197,10 @@
        01  WS-LINE-COUNT    PIC S9(4) BINARY         VALUE ZERO.
        01  WS-PAGE-COUNT    PIC 9(4)  PACKED-DECIMAL VALUE ZERO.
        01  WS-BLANK-ROW               PIC X(132)     VALUE SPACES.
+       01  WS-SHR-PRC-ID   PIC S9(4) BINARY SYNC VALUE ZERO.
+
+       01 WS-SHARE-AMT          PIC 9(9)V999  PACKED-DECIMAL VALUE ZERO.
+       01 WS-COMMISSION-AMT     PIC 9(9)V99   PACKED-DECIMAL VALUE ZERO.
 
       *  HEADING LINE 1
        01 WS-COLUMN-HEADER-1.
@@ -450,7 +454,10 @@
 
       *             DEBUG REMOVE LATER ...
                     DISPLAY
-                        '    *' I '  ' SALE-FUND-NBR(I)
+                        '*** DEBUG *** -> '
+                        SALE-BRANCH-NME ' '
+                        SALE-BROKER-NME ' : '
+                        I '  ' SALE-FUND-NBR(I)
                         '=' TBL-FUND-NBR(TBL-FUND-NDX)
                         ' ' TBL-FUND-NME(TBL-FUND-NDX)
                         ' ' SALE-SHR-PRC-FLG(I)
@@ -459,6 +466,55 @@
                     MOVE TBL-FUND-NBR(TBL-FUND-NDX) TO WS-DTL-FUND-NBR
                     MOVE TBL-FUND-NME(TBL-FUND-NDX) TO WS-DTL-FUND-NME
                     MOVE SALE-DEP-AMT(I) TO WS-DTL-DEP-AMT
+
+      *    PRICE CALCULATION
+
+      *             CANNOT DO TBL-FUND-NDX, SALE-SHR-PRC-FLG(I)
+                    COMPUTE WS-SHR-PRC-ID = SALE-SHR-PRC-FLG(I)
+
+      *             GUARDS KEY, PRICE, DEPOSIT CHECK
+                    IF SALE-SHR-PRC-FLG(I) >= 1
+                       AND SALE-SHR-PRC-FLG(I) <= 3
+                       AND TBL-FUND-SHR-PRC(
+                          TBL-FUND-NDX, WS-SHR-PRC-ID) > 0
+                       AND SALE-DEP-AMT(I) > 0
+                       THEN
+
+      *                SELECTED IS -> SALE-SHR-PRC-FLG(I)
+      *                SO PRICE IS TBL-FUND-SHR-PRC(SALE-SHR-PRC-FLG(I))
+
+      *                SO AMOUT SOLD IS
+                       COMPUTE WS-SHARE-AMT ROUNDED  =
+                          SALE-DEP-AMT(I) /
+                             TBL-FUND-SHR-PRC(
+                                TBL-FUND-NDX, WS-SHR-PRC-ID)
+
+                       MOVE WS-SHARE-AMT TO WS-DTL-SHARE-AMT
+
+      *                COMISSION CALCULATION
+                       COMPUTE WS-COMMISSION-AMT ROUNDED =
+                          ( SALE-DEP-AMT(I)
+                             * TBL-FUND-COMM-PCT(TBL-FUND-NDX) )
+                                / 100
+
+                       MOVE WS-COMMISSION-AMT TO WS-DTL-COMMISSION-AMT
+
+                    ELSE
+      *                SOMETHING WAS NOT VALID, BAILED OUT
+                       MOVE ZERO TO WS-DTL-SHARE-AMT
+                       MOVE ZERO TO WS-DTL-COMMISSION-AMT
+
+                       DISPLAY
+                          '*** DATA ERROR *** -> '
+                          SALE-BRANCH-NME ' '
+                          SALE-BROKER-NME ' : '
+                          I '  ' SALE-FUND-NBR(I)
+                          '=' TBL-FUND-NBR(TBL-FUND-NDX)
+                          ' ' TBL-FUND-NME(TBL-FUND-NDX)
+                          ' ' SALE-SHR-PRC-FLG(I)
+                          ' ' SALE-DEP-AMT(I)
+
+                    END-IF
 
                END-SEARCH
 
