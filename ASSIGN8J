@@ -6,9 +6,14 @@
 //*                                                             *
 //***************************************************************
 //*
-//*********************************************************************
-//* SORT FUNDS BY FUND NUMBER ASC
-//*********************************************************************
+//* IN CASE WE FAILED TO DELETE TEMP FILE
+//DELTEMP1  EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  DELETE EMMA101.COBOL.TEMPSLRP PURGE
+  SET MAXCC = 0
+/*
+//*
 //* DELETE ANY PREVIOUS OUTPUT
 //DELREPT  EXEC PGM=IDCAMS
 //SYSPRINT DD SYSOUT=*
@@ -104,8 +109,8 @@
 //PRCFILE  DD DSN=EMMA.COBOL.ASNDATA(PRICES),DISP=SHR
 //SALEFILE DD DSN=EMMA.COBOL.DATA8(SALES),DISP=SHR
 //*
-//HIGHSLS  DD DSN=&&HIGHSLS,
-//            DISP=(NEW,DELETE,DELETE),
+//TEMPSLRP DD DSN=EMMA101.COBOL.TEMPSLRP,
+//            DISP=(NEW,CATLG,DELETE),
 //            UNIT=SYSDA,
 //            SPACE=(TRK,(1,1)),
 //            DCB=(RECFM=FB,LRECL=34,BLKSIZE=0)
@@ -122,4 +127,17 @@
 //SYSLOUT  DD SYSOUT=*
 //*
 //SYSUDUMP DD SYSOUT=*
+//*
+//*********************************************************************
+//* CLEAN UP
+//*********************************************************************
+//*
+//* DELETE TEMP FILE
+//DELTEMP2  EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  DELETE EMMA101.COBOL.TEMPSLRP PURGE
+  SET MAXCC = 0
+/*
+//*
 //

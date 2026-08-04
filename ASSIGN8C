@@ -50,17 +50,17 @@
                ACCESS MODE IS SEQUENTIAL
                FILE STATUS IS WS-SALES-FILE-STATUS.
 
-           SELECT HIGH-SALES-FILE
-               ASSIGN TO HIGHSLS
-               ORGANIZATION IS SEQUENTIAL
-               ACCESS MODE IS SEQUENTIAL
-               FILE STATUS IS WS-HIGH-SALES-FILE-STATUS.
-
            SELECT REPORT-FILE
                ASSIGN TO REPORTFL
                ORGANIZATION IS SEQUENTIAL
                ACCESS MODE IS SEQUENTIAL
                FILE STATUS IS WS-REPORT-FILE-STATUS.
+
+           SELECT TEMP-SALES-FILE
+               ASSIGN TO TEMPSLRP
+               ORGANIZATION IS SEQUENTIAL
+               ACCESS MODE IS SEQUENTIAL
+               FILE STATUS IS WS-TEMP-FILE-STATUS.
 
 
       ****************************************************************
@@ -109,19 +109,6 @@
            05                           PIC X.
 
 
-
-       FD  HIGH-SALES-FILE
-           RECORDING MODE IS F
-           RECORD CONTAINS 34 CHARACTERS.
-
-      *   COPY HSREC.
-       01  HIGH-SALES-RECORD.
-           05  HS-BROKER-NME         PIC X(25).
-           05  HS-FUND-NBR           PIC S9(3)       PACKED-DECIMAL.
-           05  HS-SHR-AMT            PIC S9(10)V9(3) PACKED-DECIMAL.
-
-
-
        FD  REPORT-FILE
            RECORDING MODE IS F
            RECORD CONTAINS 132 CHARACTERS.
@@ -129,13 +116,21 @@
        01  REPORT-RECORD                 PIC X(132).
 
 
+       FD  TEMP-SALES-FILE
+           RECORDING MODE IS F
+           RECORD CONTAINS 34 CHARACTERS.
+
+       01  HIGH-SALES-RECORD.
+           05 HS-BROKER-NME PIC X(25).
+           05 HS-FUND-NBR   PIC S9(3) PACKED-DECIMAL.
+           05 HS-SHR-AMT    PIC S9(10)V9(3) PACKED-DECIMAL.
+
+
+      ****************************************************************
        WORKING-STORAGE SECTION.
 
-      ****************************************************************
-      *  FILE STATUS FIELDS                                          *
-      ****************************************************************
 
-      * GENERAL FOR INDEX
+      * GENERAL FOR TO INDEX
        01  I                             PIC S9(4) BINARY VALUE ZERO.
 
        01  WS-END-OF-FILE                PIC X VALUE 'N'.
@@ -155,12 +150,16 @@
            88  SALES-FILE-OK             VALUE '00'.
            88  SALES-FILE-AT-END         VALUE '10'.
 
-       01  WS-HIGH-SALES-FILE-STATUS     PIC XX VALUE SPACES.
-           88  HIGH-SALES-FILE-OK        VALUE '00'.
-           88  HIGH-SALES-FILE-AT-END    VALUE '10'.
+       01  WS-TEMP-FILE-STATUS           PIC XX.
+           88 TEMP-FILE-OK               VALUE '00'.
 
        01  WS-REPORT-FILE-STATUS         PIC XX VALUE SPACES.
            88  REPORT-FILE-OK            VALUE '00'.
+
+       01 WS-HIGH-SALE-COUNT PIC 9(3)    PACKED-DECIMAL VALUE ZERO.
+       01 WS-HIGH-BROKER-COUNT PIC 9(3)  PACKED-DECIMAL VALUE ZERO.
+       01 WS-PREV-HS-BROKER PIC X(25)    VALUE SPACES.
+
 
       ****************************************************************
       *  FUND TABLE                                                   *
@@ -337,30 +336,102 @@
           05 FILLER PIC X(18) VALUE '------------------'.
 
        01 WS-TOTALS-DETAIL.
-          05 FILLER PIC X(27) VALUE SPACES.
-          05 WS-TOT-BROKER-COUNT PIC ZZ9.
-          05 FILLER PIC X(23) VALUE SPACES.
-          05 WS-TOT-SALES-COUNT PIC ZZ9.
-          05 FILLER PIC X(22) VALUE SPACES.
-          05 WS-TOT-DEPOSITS PIC $$$,$$$,$$$,$$9.99.
-          05 FILLER PIC X(22) VALUE SPACES.
-          05 WS-TOT-COMMISSIONS PIC $$$,$$$,$$9.99.
+          05 FILLER                   PIC X(27) VALUE SPACES.
+          05 WS-TOT-BROKER-COUNT      PIC ZZ9.
+          05 FILLER                   PIC X(23) VALUE SPACES.
+          05 WS-TOT-SALES-COUNT       PIC ZZ9.
+          05 FILLER                   PIC X(22) VALUE SPACES.
+          05 WS-TOT-DEPOSITS          PIC $$$,$$$,$$$,$$9.99.
+          05 FILLER                   PIC X(22) VALUE SPACES.
+          05 WS-TOT-COMMISSIONS       PIC $$$,$$$,$$9.99.
 
        01 WS-AVG-BROKER-LINE.
-          05 FILLER PIC X(48) VALUE SPACES.
-          05 FILLER PIC X(26)
+          05 FILLER                   PIC X(48) VALUE SPACES.
+          05 FILLER                   PIC X(26)
              VALUE 'AVERAGE DEPOSIT BY BROKER:'.
-          05 FILLER PIC X(4) VALUE SPACES.
-          05 WS-TOT-AVG-BROKER PIC $$$,$$$,$$$,$$9.99.
-          05 FILLER PIC X(36) VALUE SPACES.
+          05 FILLER                   PIC X(4) VALUE SPACES.
+          05 WS-TOT-AVG-BROKER        PIC $$$,$$$,$$$,$$9.99.
+          05 FILLER                   PIC X(36) VALUE SPACES.
 
        01 WS-AVG-SALE-LINE.
-          05 FILLER PIC X(50) VALUE SPACES.
-          05 FILLER PIC X(24)
+          05 FILLER                   PIC X(50) VALUE SPACES.
+          05 FILLER                   PIC X(24)
              VALUE 'AVERAGE DEPOSIT BY SALE:'.
-          05 FILLER PIC X(4) VALUE SPACES.
-          05 WS-TOT-AVG-SALE PIC $$$,$$$,$$$,$$9.99.
-          05 FILLER PIC X(36) VALUE SPACES.
+          05 FILLER                   PIC X(4) VALUE SPACES.
+          05 WS-TOT-AVG-SALE          PIC $$$,$$$,$$$,$$9.99.
+          05 FILLER                   PIC X(36) VALUE SPACES.
+
+      ****************************************************************
+      *                      HIGH SALES REPORT                       *
+      ****************************************************************
+
+
+       01  WS-HIGH-SALES-PAGE-HEADER-2.
+           05 WS-HIGH-HEADER-HOUR       PIC 99.
+           05 FILLER                    PIC X VALUE ':'.
+           05 WS-HIGH-HEADER-MINUTE     PIC 99.
+           05 FILLER                    PIC X VALUE SPACE.
+           05 WS-HIGH-HEADER-AM-PM      PIC X(2).
+           05 FILLER                    PIC X(44) VALUE SPACES.
+           05 FILLER                    PIC X(25)
+               VALUE 'BROKER LARGE SALES REPORT'.
+           05 FILLER                    PIC X(55) VALUE SPACES.
+
+       01 WS-HIGH-SALES-DETAIL.
+           05 FILLER PIC X(18) VALUE SPACES.
+           05 WS-HS-BROKER-NME PIC X(25).
+           05 FILLER PIC X(14) VALUE SPACES.
+           05 WS-HS-FUND-NBR PIC ZZ9.
+           05 FILLER PIC X(10) VALUE SPACES.
+           05 WS-HS-FUND-NME PIC X(25).
+           05 FILLER PIC X(2) VALUE SPACES.
+           05 WS-HS-SHR-AMT PIC ZZZ,ZZZ,ZZ9.9999.
+           05 FILLER PIC X(18) VALUE SPACES.
+
+      **
+
+       01 WS-HIGH-SALES-COLUMN-HEADERS.
+          05 FILLER PIC X(18) VALUE SPACES.
+          05 FILLER PIC X(25) VALUE 'BROKER NAME'.
+          05 FILLER PIC X(14) VALUE SPACES.
+          05 FILLER PIC X(4) VALUE 'FUND'.
+          05 FILLER PIC X(10) VALUE SPACES.
+          05 FILLER PIC X(25) VALUE 'FUND NAME'.
+          05 FILLER PIC X(2) VALUE SPACES.
+          05 FILLER PIC X(16) VALUE '     SHARES SOLD'.
+          05 FILLER PIC X(18) VALUE SPACES.
+
+       01 WS-HIGH-SALES-UNDERLINES.
+          05 FILLER PIC X(18) VALUE SPACES.
+          05 FILLER PIC X(25) VALUE '-------------------------'.
+          05 FILLER PIC X(14) VALUE SPACES.
+          05 FILLER PIC X(4) VALUE '----'.
+          05 FILLER PIC X(10) VALUE SPACES.
+          05 FILLER PIC X(25) VALUE '-------------------------'.
+          05 FILLER PIC X(2) VALUE SPACES.
+          05 FILLER PIC X(16) VALUE '----------------'.
+          05 FILLER PIC X(18) VALUE SPACES.
+
+       01 WS-HIGH-SALES-TOTALS-COLUMNS.
+          05 FILLER PIC X(43) VALUE SPACES.
+          05 FILLER PIC X(20) VALUE 'NUMBER OF HIGH SALES'.
+          05 FILLER PIC X(7) VALUE SPACES.
+          05 FILLER PIC X(18) VALUE 'HIGH SALES BROKERS'.
+          05 FILLER PIC X(44) VALUE SPACES.
+
+       01 WS-HIGH-SALES-TOT-UNDERLINES.
+          05 FILLER PIC X(43) VALUE SPACES.
+          05 FILLER PIC X(20) VALUE '--------------------'.
+          05 FILLER PIC X(7) VALUE SPACES.
+          05 FILLER PIC X(18) VALUE '------------------'.
+          05 FILLER PIC X(44) VALUE SPACES.
+
+       01 WS-HIGH-SALES-TOTALS-DETAIL.
+          05 FILLER PIC X(60) VALUE SPACES.
+          05 WS-PRINT-HIGH-SALE-COUNT PIC Z9.
+          05 FILLER PIC X(23) VALUE SPACES.
+          05 WS-PRINT-HIGH-BROKER-COUNT PIC Z9.
+          05 FILLER PIC X(45) VALUE SPACES.
 
 
 
@@ -379,6 +450,7 @@
            PERFORM 110-OPEN-PRICES-FILE.
            PERFORM 120-OPEN-SALES-FILE.
            PERFORM 130-OPEN-REPORT-FILE.
+           PERFORM 140-OPEN-TEMP-FILE-WRITE.
 
       *    PREPARE HEADER
            PERFORM 420-PREPARE-HEADER.
@@ -387,6 +459,17 @@
            PERFORM 300-PROCESS-FUND-PRICE-TABLE.
            PERFORM 320-PROCESS-SALES-TABLE.
            PERFORM 430-PRINT-REPORT-TOTALS.
+
+      *    HIGH SALES REPORT
+           PERFORM 620-CLOSE-TEMP-FILE
+           PERFORM 150-OPEN-TEMP-FILE-READ.
+           PERFORM 340-PROCESS-HIGH-SALES.
+           PERFORM 350-PROCESS-HIGH-SALES-SUMMARY.
+
+      *    CLOSE FILES
+           PERFORM 600-CLOSE-SALE-FILE.
+           PERFORM 610-CLOSE-REPORT-FILE.
+           PERFORM 620-CLOSE-TEMP-FILE.
 
            STOP RUN.
 
@@ -437,6 +520,33 @@
                    WS-REPORT-FILE-STATUS
               STOP RUN
            END-IF.
+
+
+       140-OPEN-TEMP-FILE-WRITE.
+
+           DISPLAY 'OPENING TEMP FILE... WRITE'.
+
+           OPEN OUTPUT TEMP-SALES-FILE.
+
+           IF NOT TEMP-FILE-OK
+              DISPLAY 'FATAL: TEMP FILE OPEN ERROR: '
+                   WS-TEMP-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
+       150-OPEN-TEMP-FILE-READ.
+
+           DISPLAY 'OPENING TEMP FILE... READ'.
+
+           OPEN INPUT TEMP-SALES-FILE.
+
+           IF NOT TEMP-FILE-OK
+              DISPLAY 'FATAL: TEMP FILE OPEN ERROR: '
+                   WS-TEMP-FILE-STATUS
+              STOP RUN
+           END-IF.
+
 
 
        300-PROCESS-FUND-PRICE-TABLE.
@@ -607,6 +717,23 @@
 
                        MOVE WS-SHARE-AMT TO WS-DTL-SHARE-AMT
 
+      *                CALCULATE HIGH SALES
+                       IF WS-SHARE-AMT > 10000.000
+
+                          MOVE SALE-BROKER-NME TO HS-BROKER-NME
+                          MOVE SALE-FUND-NBR(I) TO HS-FUND-NBR
+                          MOVE WS-SHARE-AMT TO HS-SHR-AMT
+
+                          WRITE HIGH-SALES-RECORD
+
+                          IF NOT TEMP-FILE-OK
+                             DISPLAY 'FATAL: TEMP FILE WRITE ERROR: '
+                                WS-TEMP-FILE-STATUS
+                             STOP RUN
+                          END-IF
+
+                       END-IF
+
       *                COMISSION CALCULATION
                        COMPUTE WS-COMMISSION-AMT ROUNDED =
                           ( SALE-DEP-AMT(I)
@@ -646,6 +773,89 @@
 
            END-PERFORM.
       *    END LOOP
+
+
+       340-PROCESS-HIGH-SALES.
+
+           DISPLAY 'PROCESS HS SALES...'.
+
+      **   PRINT HEADER **
+           MOVE ZERO TO WS-PAGE-COUNT.
+           MOVE ZERO TO WS-LINE-COUNT.
+           PERFORM 500-WRITE-HIGH-SALES-HEADER.
+           PERFORM 510-WRITE-HIGH-SALES-COL-HEADR.
+
+      **   RESET EOF FLAG   **
+           SET NOT-END-OF-FILE TO TRUE.
+
+      **   PROCESS  **
+           PERFORM UNTIL END-OF-FILE
+              READ TEMP-SALES-FILE
+
+                 AT END
+                     SET END-OF-FILE TO TRUE
+                 NOT AT END
+
+      **         PAGINATION  **
+                 IF WS-LINE-COUNT >= 36
+                     MOVE ZERO TO WS-LINE-COUNT
+                     PERFORM 500-WRITE-HIGH-SALES-HEADER
+                     PERFORM 510-WRITE-HIGH-SALES-COL-HEADR
+                 END-IF
+
+      *          WE DONT HAVE THE FUND NAME
+                 SEARCH ALL TBL-FUND-ENTRY
+                    AT END
+                       MOVE '**** FUND NOT FOUND *****'
+                          TO WS-HS-FUND-NME
+
+                    WHEN TBL-FUND-NBR(TBL-FUND-NDX) = HS-FUND-NBR
+                       MOVE TBL-FUND-NME(TBL-FUND-NDX)
+                          TO WS-HS-FUND-NME
+
+                 END-SEARCH
+
+                 ADD 1 TO WS-HIGH-SALE-COUNT
+
+      *          BLANK IF SAME BROKER
+                 IF HS-BROKER-NME = WS-PREV-HS-BROKER
+                    MOVE SPACES TO WS-HS-BROKER-NME
+                 ELSE
+                    MOVE HS-BROKER-NME TO WS-HS-BROKER-NME
+                    ADD 1 TO WS-HIGH-BROKER-COUNT
+                 END-IF
+
+                 MOVE HS-BROKER-NME TO WS-PREV-HS-BROKER
+                 MOVE HS-FUND-NBR TO WS-HS-FUND-NBR
+                 MOVE HS-SHR-AMT TO WS-HS-SHR-AMT
+
+                 WRITE REPORT-RECORD FROM WS-HIGH-SALES-DETAIL
+                 WRITE REPORT-RECORD FROM WS-BLANK-ROW
+                 ADD 2 TO WS-LINE-COUNT
+
+      **         RUNNING TOTALS   **
+
+
+              END-READ
+           END-PERFORM.
+
+      *     PRINT FINAL SUMMARY
+
+       350-PROCESS-HIGH-SALES-SUMMARY.
+
+           DISPLAY 'WRITE HS SALES SUMMARY...'.
+
+           PERFORM 500-WRITE-HIGH-SALES-HEADER.
+
+           MOVE WS-HIGH-SALE-COUNT TO WS-PRINT-HIGH-SALE-COUNT
+           MOVE WS-HIGH-BROKER-COUNT TO WS-PRINT-HIGH-BROKER-COUNT
+
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW.
+           WRITE REPORT-RECORD FROM WS-HIGH-SALES-TOTALS-COLUMNS.
+           WRITE REPORT-RECORD FROM WS-HIGH-SALES-TOT-UNDERLINES.
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW.
+           WRITE REPORT-RECORD FROM WS-HIGH-SALES-TOTALS-DETAIL.
+
 
 
        400-PRINT-COLUMN-HEADINGS.
@@ -740,6 +950,75 @@
            WRITE REPORT-RECORD FROM WS-AVG-BROKER-LINE.
            WRITE REPORT-RECORD FROM WS-BLANK-ROW.
            WRITE REPORT-RECORD FROM WS-AVG-SALE-LINE.
+
+
+       500-WRITE-HIGH-SALES-HEADER.
+
+           MOVE 3 TO WS-LINE-COUNT.
+           COMPUTE  WS-PAGE-COUNT = WS-PAGE-COUNT + 1.
+           MOVE WS-PAGE-COUNT TO WS-HEADER-PAGE-NUM.
+
+           WRITE REPORT-RECORD FROM WS-PAGE-HEADER-1.
+           WRITE REPORT-RECORD FROM WS-HIGH-SALES-PAGE-HEADER-2.
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW.
+
+           IF NOT REPORT-FILE-OK
+               DISPLAY 'FATAL: REPORT FILE WRITE ERROR: '
+                   WS-REPORT-FILE-STATUS
+               STOP RUN
+           END-IF.
+
+
+       510-WRITE-HIGH-SALES-COL-HEADR.
+
+           WRITE REPORT-RECORD FROM WS-HIGH-SALES-COLUMN-HEADERS.
+           WRITE REPORT-RECORD FROM WS-HIGH-SALES-UNDERLINES.
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW.
+           ADD 3 TO WS-LINE-COUNT
+
+           IF NOT REPORT-FILE-OK
+               DISPLAY 'FATAL: REPORT FILE WRITE ERROR: '
+                   WS-REPORT-FILE-STATUS
+               STOP RUN
+           END-IF.
+
+
+       600-CLOSE-SALE-FILE.
+
+           DISPLAY 'CLOSING SALES FILE...'.
+
+           CLOSE SALES-FILE.
+
+           IF NOT SALES-FILE-OK
+               DISPLAY 'FATAL: SALE FILE CLOSE ERROR: '
+                   WS-SALES-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
+       610-CLOSE-REPORT-FILE.
+
+           DISPLAY 'CLOSING REPORT FILE...'.
+
+           CLOSE REPORT-FILE.
+
+           IF NOT REPORT-FILE-OK
+               DISPLAY 'FATAL: REPORT FILE CLOSE ERROR '
+                   WS-REPORT-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+       620-CLOSE-TEMP-FILE.
+
+           DISPLAY 'CLOSING TEMP FILE...'.
+
+           CLOSE TEMP-SALES-FILE.
+
+           IF NOT TEMP-FILE-OK
+               DISPLAY 'FATAL: TEMP FILE CLOSE ERROR '
+                   WS-TEMP-FILE-STATUS
+              STOP RUN
+           END-IF.
 
        END PROGRAM SALESRPT.
 
