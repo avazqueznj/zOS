@@ -5,22 +5,32 @@
 
       ****************************************************************
       *                                                              *
-      *  PROGRAM NAME:      SALESRPT.                                *
+      *  PROGRAM NAME:      SALESRPT                                 *
       *                                                              *
-      *  PURPOSE:                                                    *
+      *  PURPOSE:           MUTUAL FUND SALES                        *
+      *                     REPORT AND A HIGH-SALES SUBREPORT FOR    *
+      *                     SALES EXCEEDINGTHE THRESHOLD.            *
       *                                                              *
+      *  INPUT:             FUNDS FILE                               *
+      *                     PRICES FILE                              *
+      *                     SALES FILE                               *
       *                                                              *
-      *  INPUT:                                                      *
+      *  OUTPUT:            BROKER  SALES AND DEPOSIT REPORT         *
+      *                     BROKER HIGH-SALES SUBREPORT              *
       *                                                              *
-      *  OUTPUT:                                                     *
+      *  ENTRY CONDITIONS:                                           *
+      *       1. A PRICE RECORD EXISTS FOR EACH FUND IN THE FUNDS    *
+      *          TABLE.                                              *
+      *       2. EVERY FUND NUMBER IN THE SALES FILE EXISTS IN THE   *
+      *          FUNDS TABLE.                                        *
+      *       3. THE FUNDS FILE IS SORTED IN ASCENDING FUND-NUMBER   *
+      *          ORDER.                                              *
       *                                                              *
-      *  ENTRY CONDITION:                                            *
-      *                                                              *
-      *                                                              *
-      *  EXIT CONDITION:                                             *
+      *  EXIT CONDITIONS:                                            *
+      *       1. THE SALES REPORT AND HIGH-SALES SUBREPORT ARE       *
+      *          PRODUCED SUCCESSFULLY.                              *
       *                                                              *
       *  NOTES:                                                      *
-      *                                                              *
       *                                                              *
       ****************************************************************
 
@@ -648,7 +658,6 @@
               IF I = 1 THEN
                  MOVE SALE-BRANCH-NME TO WS-DTL-BRANCH-NME
                  MOVE SALE-BROKER-NME TO WS-DTL-BROKER-NME
-                 DISPLAY SALE-BRANCH-NME '-' SALE-BROKER-NME
                  ADD 1 TO WS-BROKER-COUNT
               ELSE
                  MOVE SPACES TO WS-DTL-BRANCH-NME
@@ -677,17 +686,6 @@
 
       *          FUND FOUND  >><<
                  WHEN TBL-FUND-NBR(TBL-FUND-NDX) = SALE-FUND-NBR(I)
-
-      *             DEBUG REMOVE LATER ...
-                    DISPLAY
-                        '*** DEBUG *** -> '
-                        SALE-BRANCH-NME ' '
-                        SALE-BROKER-NME ' : '
-                        I '  ' SALE-FUND-NBR(I)
-                        '=' TBL-FUND-NBR(TBL-FUND-NDX)
-                        ' ' TBL-FUND-NME(TBL-FUND-NDX)
-                        ' ' SALE-SHR-PRC-FLG(I)
-                        ' ' SALE-DEP-AMT(I)
 
                     MOVE TBL-FUND-NBR(TBL-FUND-NDX) TO WS-DTL-FUND-NBR
                     MOVE TBL-FUND-NME(TBL-FUND-NDX) TO WS-DTL-FUND-NME
