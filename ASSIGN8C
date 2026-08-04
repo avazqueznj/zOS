@@ -202,28 +202,72 @@
        01 WS-SHARE-AMT          PIC 9(9)V999  PACKED-DECIMAL VALUE ZERO.
        01 WS-COMMISSION-AMT     PIC 9(9)V99   PACKED-DECIMAL VALUE ZERO.
 
+       01  WS-CURRENT-DATE.
+           05 CURRENT-YEAR           PIC X(4).
+           05 CURRENT-MONTH          PIC X(2).
+           05 CURRENT-DAY            PIC X(2).
+           05 CURRENT-TIME           PIC X(6).
+           05 CURRENT-HUNDREDTHS     PIC X(2).
+           05 CURRENT-OFFSET         PIC X(5).
+
+      *                 REPORT HEADER
+
+       01 WS-PAGE-HEADER-1.
+          05 WS-HEADER-DATE.
+             10 CURRENT-MONTH            PIC X(2).
+             10 FILLER                   PIC X VALUE '/'.
+             10 CURRENT-DAY              PIC X(2).
+             10 FILLER                   PIC X VALUE '/'.
+             10 CURRENT-YEAR             PIC X(4).
+          05 FILLER                      PIC X(40) VALUE SPACES.
+          05 FILLER                      PIC X(32)
+             VALUE 'WASHINGTON & LINCOLN INVESTMENTS'.
+          05 FILLER                      PIC X(41) VALUE SPACES.
+          05 FILLER                      PIC X(6) VALUE 'PAGE: '.
+          05 WS-HEADER-PAGE-NUM          PIC ZZ9.
+
+       01 WS-PAGE-HEADER-2.
+          05 WS-HEADER-TIME.
+             10 WS-HEADER-HOUR           PIC 99.
+             10 FILLER                   PIC X VALUE ':'.
+             10 WS-HEADER-MINUTE         PIC X(2).
+             10 FILLER                   PIC X VALUE SPACE.
+             10 WS-HEADER-AM-PM          PIC X(2).
+          05 FILLER                      PIC X(40) VALUE SPACES.
+          05 FILLER                      PIC X(37)
+             VALUE 'BROKER DAILY SALES AND DEPOSIT REPORT'.
+          05 FILLER                      PIC X(30) VALUE SPACES.
+          05 FILLER                      PIC X(9) VALUE 'JOBNAME: '.
+          05 WS-HEADER-JOB-NAME          PIC X(8).
+
+
+      *                 COLUMEN HEADERS
+
       *  HEADING LINE 1
        01 WS-COLUMN-HEADER-1.
-          05 FILLER PIC X(82) VALUE SPACES.
-          05 FILLER PIC X(14) VALUE '       DEPOSIT'.
-          05 FILLER PIC X(22) VALUE SPACES.
-          05 FILLER PIC X(14) VALUE '    COMMISSION'.
+          05 FILLER                   PIC X(82) VALUE SPACES.
+          05 FILLER                   PIC X(14) VALUE '       DEPOSIT'.
+          05 FILLER                   PIC X(22) VALUE SPACES.
+          05 FILLER                   PIC X(14) VALUE '    COMMISSION'.
 
       *  HEADING LINE 2
        01 WS-COLUMN-HEADER-2.
-          05 FILLER PIC X(21) VALUE 'BRANCH NAME'.
-          05 FILLER PIC X(2)  VALUE SPACES.
-          05 FILLER PIC X(25) VALUE 'BROKER NAME'.
-          05 FILLER PIC X     VALUE SPACE.
-          05 FILLER PIC X(4)  VALUE 'FUND'.
-          05 FILLER PIC X(2)  VALUE SPACES.
-          05 FILLER PIC X(25) VALUE 'FUND NAME'.
-          05 FILLER PIC X(2)  VALUE SPACES.
-          05 FILLER PIC X(14) VALUE '        AMOUNT'.
-          05 FILLER PIC X(4)  VALUE SPACES.
-          05 FILLER PIC X(16) VALUE '     SHARES SOLD'.
-          05 FILLER PIC X(2)  VALUE SPACES.
-          05 FILLER PIC X(14) VALUE '        AMOUNT'.
+          05 FILLER                    PIC X(21) VALUE 'BRANCH NAME'.
+          05 FILLER                    PIC X(2)  VALUE SPACES.
+          05 FILLER                    PIC X(25) VALUE 'BROKER NAME'.
+          05 FILLER                    PIC X     VALUE SPACE.
+          05 FILLER                    PIC X(4)  VALUE 'FUND'.
+          05 FILLER                    PIC X(2)  VALUE SPACES.
+          05 FILLER                    PIC X(25) VALUE 'FUND NAME'.
+          05 FILLER                    PIC X(2)  VALUE SPACES.
+          05 FILLER                    PIC X(14)
+                                       VALUE '        AMOUNT'.
+          05 FILLER                    PIC X(4)  VALUE SPACES.
+          05 FILLER                    PIC X(16)
+                                       VALUE '     SHARES SOLD'.
+          05 FILLER                    PIC X(2)  VALUE SPACES.
+          05 FILLER                    PIC X(14)
+                                       VALUE '        AMOUNT'.
 
       *  COLUMN HYPHEN LINE                                          *
        01  WS-COLUMN-HYPHENS.
@@ -273,6 +317,9 @@
            PERFORM 110-OPEN-PRICES-FILE.
            PERFORM 120-OPEN-SALES-FILE.
            PERFORM 130-OPEN-REPORT-FILE.
+
+      *    PREPARE HEADER
+           PERFORM 420-PREPARE-HEADER.
 
       *    BUILD FUND/FUND PRICE TABLE
            PERFORM 300-PROCESS-FUND-PRICE-TABLE.
@@ -416,6 +463,7 @@
 
       *       PRINT HEADERS IF NECESSARY
               IF WS-LINE-COUNT = 0 THEN
+                 PERFORM 410-PRINT-REPORT-HEADINGS
                  PERFORM 400-PRINT-COLUMN-HEADINGS
               END-IF
 
@@ -523,7 +571,7 @@
 
       *        PAGINATION
                COMPUTE WS-LINE-COUNT =  WS-LINE-COUNT + 2
-               IF WS-LINE-COUNT >= 18 THEN
+               IF WS-LINE-COUNT >= 43 THEN
                  MOVE ZERO TO WS-LINE-COUNT
                END-IF
 
@@ -539,6 +587,59 @@
            WRITE REPORT-RECORD FROM WS-BLANK-ROW.
 
            COMPUTE WS-LINE-COUNT =  WS-LINE-COUNT + 4.
+
+
+       410-PRINT-REPORT-HEADINGS.
+
+           ADD 1 TO WS-PAGE-COUNT
+           MOVE WS-PAGE-COUNT TO WS-HEADER-PAGE-NUM
+
+           WRITE REPORT-RECORD FROM WS-PAGE-HEADER-1
+           WRITE REPORT-RECORD FROM WS-PAGE-HEADER-2
+           WRITE REPORT-RECORD FROM WS-BLANK-ROW
+
+           ADD 3 TO WS-LINE-COUNT
+
+           IF NOT REPORT-FILE-OK
+              DISPLAY 'FATAL: REPORT FILE WRITE ERROR: '
+                 WS-REPORT-FILE-STATUS
+              STOP RUN
+           END-IF.
+
+
+       420-PREPARE-HEADER.
+
+           DISPLAY 'PREPARE HEADER ...'.
+
+      *    RESET
+           MOVE ZERO TO WS-PAGE-COUNT.
+           MOVE ZERO TO WS-LINE-COUNT.
+
+      *    GET TODAY'S DATE
+           MOVE FUNCTION CURRENT-DATE TO WS-CURRENT-DATE.
+           MOVE CORRESPONDING WS-CURRENT-DATE TO WS-HEADER-DATE.
+
+      *    GET JOB NAME
+           ACCEPT WS-HEADER-JOB-NAME FROM JOB-NAME
+
+      *    CHANGE HOUR TO AM/PM
+           MOVE CURRENT-TIME(1:2) TO WS-HEADER-HOUR
+           IF WS-HEADER-HOUR = 0
+               MOVE 12 TO WS-HEADER-HOUR
+               MOVE 'AM' TO WS-HEADER-AM-PM
+           ELSE
+               IF WS-HEADER-HOUR < 12
+                   MOVE 'AM' TO WS-HEADER-AM-PM
+               ELSE
+                   MOVE 'PM' TO WS-HEADER-AM-PM
+                   IF WS-HEADER-HOUR > 12
+                       SUBTRACT 12 FROM WS-HEADER-HOUR
+                   END-IF
+               END-IF
+           END-IF
+
+           MOVE CURRENT-TIME(3:2) TO WS-HEADER-MINUTE.
+
 
        END PROGRAM SALESRPT.
 
