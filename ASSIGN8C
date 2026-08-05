@@ -899,7 +899,7 @@
       *    GET JOB NAME  !! LINKER ERROR !! TBD DISCUSS W TEACHER
       *    --> AMODE24 application without using runtime options
 
-      *    CALL WS-JOBNAME-LIB USING WS-JOBNAME
+           CALL WS-JOBNAME-LIB USING WS-JOBNAME
            MOVE WS-JOBNAME TO WS-HEADER-JOB-NAME
 
 
